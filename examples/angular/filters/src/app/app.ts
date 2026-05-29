@@ -1,16 +1,7 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core'
 import {
   FlexRender,
-  columnFacetingFeature,
   columnFilteringFeature,
-  createFacetedMinMaxValues,
-  createFacetedRowModel,
-  createFacetedUniqueValues,
   createFilteredRowModel,
   createPaginatedRowModel,
   createTableHook,
@@ -26,16 +17,12 @@ import type { Person } from './makeData'
 
 export const _features = tableFeatures({
   columnFilteringFeature,
-  columnFacetingFeature,
   rowPaginationFeature,
 })
 
 const { injectAppTable, createAppColumnHelper } = createTableHook({
   _features,
   _rowModels: {
-    facetedMinMaxValues: createFacetedMinMaxValues(),
-    facetedRowModel: createFacetedRowModel(),
-    facetedUniqueValues: createFacetedUniqueValues(),
     filteredRowModel: createFilteredRowModel(filterFns),
     paginatedRowModel: createPaginatedRowModel(),
   },
@@ -104,9 +91,9 @@ export class App {
     },
   }))
 
-  readonly stringifiedFilters = computed(() =>
-    JSON.stringify(this.columnFilters(), null, 2),
-  )
+  stringifiedState() {
+    return JSON.stringify(this.table.state, null, 2)
+  }
 
   onPageInputChange(event: Event): void {
     const inputElement = event.target as HTMLInputElement

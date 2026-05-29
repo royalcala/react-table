@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { TanStackDevtools } from '@tanstack/react-devtools'
 import * as ReactDOM from 'react-dom/client'
 import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer'
 import {
@@ -72,6 +73,10 @@ import {
   tableFeatures,
   useTable,
 } from '@tanstack/react-table'
+import {
+  tableDevtoolsPlugin,
+  useTanStackTableDevtools,
+} from '@tanstack/react-table-devtools'
 import type { DragEndEvent } from '@dnd-kit/core'
 import type { Key } from 'react-aria-components'
 import type { Person } from '@/lib/make-data'
@@ -83,10 +88,10 @@ import type {
   ExpandedState,
   GroupingState,
   Header,
+  ReactTable,
   RowData,
   RowSelectionState,
   SortingState,
-  Table,
   TableFeatures,
 } from '@tanstack/react-table'
 import type { ExtendedColumnFilter } from '@/types'
@@ -128,7 +133,7 @@ const _features = tableFeatures({
 })
 
 const columnHelper = createColumnHelper<typeof _features, Person>()
-type AppTable = Table<typeof _features, Person>
+type AppTable = ReactTable<typeof _features, Person>
 type AppColumn = Column<typeof _features, Person, any>
 
 function cx(...classes: Array<string | false | null | undefined>) {
@@ -994,8 +999,8 @@ function FilterListPopover({
 }
 
 function Pagination({ table }: { table: AppTable }) {
-  const pageIndex = table.store.state.pagination.pageIndex
-  const pageSize = table.store.state.pagination.pageSize
+  const pageIndex = table.state.pagination.pageIndex
+  const pageSize = table.state.pagination.pageSize
   const pageItems = getPageItems(pageIndex, table.getPageCount())
 
   return (
@@ -1317,6 +1322,7 @@ function App() {
 
   const table = useTable(
     {
+      key: 'kitchen-sink-react-aria', // needed for devtools
       _features,
       _rowModels: {
         coreRowModel: createCoreRowModel(),
@@ -1369,6 +1375,8 @@ function App() {
     (state) => state, // default selector
   )
 
+  useTanStackTableDevtools(table)
+
   const columnSizeVars = React.useMemo(() => {
     const headers = table.getFlatHeaders()
     const colSizes: Record<string, number> = {}
@@ -1377,7 +1385,7 @@ function App() {
       colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
     }
     return colSizes
-  }, [table.store.state.columnSizing])
+  }, [table.state.columnSizing])
 
   const refreshData = () => setData(makeData(1_000))
   const stressTest = () => setData(makeData(200_000))
@@ -1567,5 +1575,6 @@ if (!rootElement) throw new Error('Failed to find the root element')
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <App />
+    <TanStackDevtools plugins={[tableDevtoolsPlugin()]} />
   </React.StrictMode>,
 )

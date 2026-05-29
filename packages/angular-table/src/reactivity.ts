@@ -1,5 +1,12 @@
-import { NgZone, computed, signal, untracked } from '@angular/core'
-import { toObservable } from '@angular/core/rxjs-interop'
+import {
+  DestroyRef,
+  NgZone,
+  computed,
+  effect,
+  signal,
+  untracked,
+} from '@angular/core'
+import { batch, createAtom } from '@tanstack/angular-store'
 import type { Atom, Observer, ReadonlyAtom } from '@tanstack/angular-store'
 import type {
   TableAtomOptions,
@@ -7,70 +14,134 @@ import type {
 } from '@tanstack/table-core/reactivity'
 import type { Injector, Signal, WritableSignal } from '@angular/core'
 
+const optionsStoreDebugName = 'table/optionsStore'
+
+function observerToCallback<T>(
+  observerOrNext: Observer<T> | ((value: T) => void),
+): (value: T) => void {
+  return typeof observerOrNext === 'function'
+    ? observerOrNext
+    : (value) => observerOrNext.next?.(value)
+}
+
 function signalToReadonlyAtom<T>(
-  signal: Signal<T>,
-  injector: Injector,
+  source: Signal<T>,
+  getSource: () => T,
+  subscribeSource: (observerOrNext: Observer<T> | ((value: T) => void)) => {
+    unsubscribe: () => void
+  },
 ): ReadonlyAtom<T> {
-  return Object.assign(signal, {
-    get: () => signal(),
-    subscribe: (observer: Observer<T>) => {
-      return toObservable(computed(signal), { injector: injector }).subscribe(
-        observer,
-      )
+  return Object.assign(source, {
+    get: () => {
+      const value = getSource()
+      source()
+      return value
     },
+    subscribe: subscribeSource as ReadonlyAtom<T>['subscribe'],
   })
 }
 
 function signalToWritableAtom<T>(
-  signal: WritableSignal<T>,
+  source: WritableSignal<T>,
   injector: Injector,
 ): Atom<T> {
-  return Object.assign(signal.asReadonly(), {
+  const observers = new Set<(value: T) => void>()
+  let observed = false
+  effect(
+    () => {
+      const value = source()
+      if (!observed) {
+        observed = true
+        return
+      }
+      observers.forEach((observer) => observer(value))
+    },
+    { injector },
+  )
+
+  return Object.assign(source.asReadonly(), {
     set: (updater: T | ((prevVal: T) => T)) => {
       typeof updater === 'function'
-        ? signal.update(updater as (val: T) => T)
-        : signal.set(updater)
+        ? source.update(updater as (val: T) => T)
+        : source.set(updater)
     },
-    get: () => signal(),
-    subscribe: (observer: Observer<T>) => {
-      return toObservable(computed(signal), { injector: injector }).subscribe(
-        observer,
-      )
-    },
+    get: () => source(),
+    subscribe: ((observerOrNext: Observer<T> | ((value: T) => void)) => {
+      const observer = observerToCallback(observerOrNext)
+      observers.add(observer)
+
+      return {
+        unsubscribe: () => observers.delete(observer),
+      }
+    }) as Atom<T>['subscribe'],
   })
 }
 
 /**
  * Creates the table-core reactivity bindings used by the Angular adapter.
  *
- * Readonly table atoms are backed by Angular `computed` signals and writable
- * atoms by Angular `signal`. Subscriptions bridge through `toObservable` with
- * the caller's injector so table APIs can be consumed from Angular `computed`
- * and `effect` calls.
+ * Table state atoms are backed by TanStack Store atoms. The options store stays
+ * framework-native because row-model APIs read `table.options` directly during
+ * render. Readonly table atoms bridge Store dependency tracking into Angular
+ * computed signals.
  */
 export function angularReactivity(injector: Injector): TableReactivityBindings {
   const ngZone = injector.get(NgZone)
+  const destroyRef = injector.get(DestroyRef)
+
   return {
     createOptionsStore: true,
     schedule: (fn) => ngZone.runOutsideAngular(() => queueMicrotask(fn)),
     createReadonlyAtom: <T>(fn: () => T, options?: TableAtomOptions<T>) => {
-      const signal = computed(() => fn(), {
-        equal: options?.compare,
-        debugName: options?.debugName,
+      const storeAtom = createAtom(() => fn(), {
+        compare: options?.compare,
       })
-      return signalToReadonlyAtom(signal, injector)
+      const version = signal(0, {
+        equal: () => false,
+      })
+      const subscription = storeAtom.subscribe(() => {
+        version.update((value) => value + 1)
+      })
+      destroyRef.onDestroy(() => subscription.unsubscribe())
+
+      const value = computed(
+        () => {
+          version()
+          return storeAtom.get()
+        },
+        {
+          equal: options?.compare,
+          debugName: options?.debugName,
+        },
+      )
+      return signalToReadonlyAtom(
+        value,
+        () => storeAtom.get(),
+        (observerOrNext) => {
+          const observer = observerToCallback(observerOrNext)
+          return storeAtom.subscribe(() => {
+            observer(storeAtom.get())
+          })
+        },
+      )
     },
     createWritableAtom: <T>(
       value: T,
       options?: TableAtomOptions<T>,
     ): Atom<T> => {
-      const writableSignal = signal(value, {
-        equal: options?.compare,
-        debugName: options?.debugName,
+      if (options?.debugName === optionsStoreDebugName) {
+        const writableSignal = signal(value, {
+          equal: options.compare,
+          debugName: options.debugName,
+        })
+        return signalToWritableAtom(writableSignal, injector)
+      }
+
+      return createAtom(value, {
+        compare: options?.compare,
       })
-      return signalToWritableAtom(writableSignal, injector)
     },
     untrack: untracked,
-    batch: (fn) => fn(),
+    batch,
   }
 }

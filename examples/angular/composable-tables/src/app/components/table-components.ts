@@ -78,7 +78,8 @@ export class RowCount {
       <span>
         Page
         <strong>
-          {{ (pageIndex() + 1).toLocaleString() }} of {{ pageCount() }}
+          {{ (table().state.pagination.pageIndex + 1).toLocaleString() }} of
+          {{ pageCount() }}
         </strong>
       </span>
       <span>
@@ -87,11 +88,14 @@ export class RowCount {
           type="number"
           min="1"
           [max]="table().getPageCount()"
-          [value]="pageIndex() + 1"
+          [value]="table().state.pagination.pageIndex + 1"
           (change)="onPageChange($event)"
         />
       </span>
-      <select [value]="pageSize()" (change)="onPageSizeChange($event)">
+      <select
+        [value]="table().state.pagination.pageSize"
+        (change)="onPageSizeChange($event)"
+      >
         @for (size of pageSizes; track size) {
           <option [value]="size">Show {{ size }}</option>
         }
@@ -107,12 +111,6 @@ export class PaginationControls {
 
   readonly canPreviousPage = computed(() => this.table().getCanPreviousPage())
   readonly canNextPage = computed(() => this.table().getCanNextPage())
-  readonly pageIndex = computed(
-    () => this.table().store.state.pagination.pageIndex,
-  )
-  readonly pageSize = computed(
-    () => this.table().store.state.pagination.pageSize,
-  )
   readonly pageCount = computed(() =>
     this.table().getPageCount().toLocaleString(),
   )

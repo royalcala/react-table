@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core'
 import {
   FlexRender,
   columnVisibilityFeature,
@@ -99,10 +94,11 @@ export class App {
     debugColumns: true,
   }))
 
-  readonly stringifiedColumnVisibility = computed(() => {
-    return JSON.stringify(this.table.store.state.columnVisibility)
-  })
+  stringifiedState() {
+    return JSON.stringify(this.table.state, null, 2)
+  }
 
   refreshData = () => this.data.set(makeData(20))
   stressTest = () => this.data.set(makeData(1_000))
+  rerender = () => this.data.update((data) => [...data])
 }

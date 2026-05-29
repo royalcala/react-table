@@ -7,6 +7,7 @@ import {
   TanStackTableHeader,
   flexRenderComponent,
 } from '@tanstack/angular-table'
+import { injectTanStackTableDevtools } from '@tanstack/angular-table-devtools'
 import { makeData } from '../../makeData'
 import { createAppColumnHelper, injectAppTable } from '../../table'
 import type { Person } from '../../makeData'
@@ -26,6 +27,11 @@ export const personColumnHelper = createAppColumnHelper<Person>()
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UsersTable {
+  constructor() {
+    injectTanStackTableDevtools(() => ({
+      table: this.table,
+    }))
+  }
   readonly data = signal(makeData(1_000))
 
   readonly columns = personColumnHelper.columns([
@@ -67,6 +73,7 @@ export class UsersTable {
   ])
 
   table = injectAppTable(() => ({
+    key: 'users-table', // needed for devtools
     columns: this.columns,
     data: this.data(),
     debugTable: true,

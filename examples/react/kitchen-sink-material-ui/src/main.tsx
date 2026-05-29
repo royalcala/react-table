@@ -109,6 +109,7 @@ import {
   tableFeatures,
   useTable,
 } from '@tanstack/react-table'
+import { useTanStackTableDevtools } from '@tanstack/react-table-devtools'
 import type { Person } from '@/lib/make-data'
 import type { DragEndEvent } from '@dnd-kit/core'
 import type {
@@ -119,9 +120,9 @@ import type {
   ExpandedState,
   GroupingState,
   Header,
+  ReactTable,
   RowData,
   SortingState,
-  Table,
   TableFeatures,
 } from '@tanstack/react-table'
 import type { ExtendedColumnFilter } from '@/types'
@@ -163,7 +164,7 @@ const _features = tableFeatures({
 })
 
 const columnHelper = createColumnHelper<typeof _features, Person>()
-type AppTable = Table<typeof _features, Person>
+type AppTable = ReactTable<typeof _features, Person>
 type AppColumn = Column<typeof _features, Person, any>
 
 function SortableFrame({
@@ -1128,8 +1129,8 @@ function Pagination({ table }: { table: AppTable }) {
         <TablePagination
           component="div"
           count={table.getFilteredRowModel().rows.length}
-          page={table.store.state.pagination.pageIndex}
-          rowsPerPage={table.store.state.pagination.pageSize}
+          page={table.state.pagination.pageIndex}
+          rowsPerPage={table.state.pagination.pageSize}
           rowsPerPageOptions={[10, 20, 30, 40, 50]}
           showFirstButton
           showLastButton
@@ -1388,6 +1389,7 @@ function App({
 
   const table = useTable(
     {
+      key: 'kitchen-sink-material-ui', // needed for devtools
       _features,
       _rowModels: {
         coreRowModel: createCoreRowModel(),
@@ -1440,6 +1442,8 @@ function App({
     (state) => state, // default selector
   )
 
+  useTanStackTableDevtools(table)
+
   const columnSizeVars = React.useMemo(() => {
     const headers = table.getFlatHeaders()
     const colSizes: Record<string, number> = {}
@@ -1448,7 +1452,7 @@ function App({
       colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
     }
     return colSizes
-  }, [table.store.state.columnSizing])
+  }, [table.state.columnSizing])
 
   const refreshData = () => setData(makeData(1_000))
   const stressTest = () => setData(makeData(200_000))

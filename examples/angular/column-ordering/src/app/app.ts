@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  signal,
-} from '@angular/core'
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core'
 import {
   FlexRender,
   columnOrderingFeature,
@@ -106,9 +101,9 @@ export class App {
     debugColumns: true,
   }))
 
-  readonly stringifiedColumnOrdering = computed(() => {
-    return JSON.stringify(this.table.store.state.columnOrder)
-  })
+  stringifiedState() {
+    return JSON.stringify(this.table.state, null, 2)
+  }
 
   randomizeColumns() {
     this.table.setColumnOrder(
