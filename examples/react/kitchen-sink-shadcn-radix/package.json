@@ -18,16 +18,16 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@faker-js/faker": "^10.4.0",
     "@tailwindcss/vite": "^4.3.0",
-    "@tanstack/match-sorter-utils": "^9.0.0-alpha.4",
+    "@tanstack/match-sorter-utils": "workspace:*",
     "@tanstack/react-devtools": "^0.10.5",
     "@tanstack/react-pacer": "^0.22.1",
-    "@tanstack/react-table": "^9.0.0-alpha.49",
-    "@tanstack/react-table-devtools": "^9.0.0-alpha.49",
+    "@tanstack/react-table": "workspace:*",
+    "@tanstack/react-table-devtools": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
-    "date-fns": "^4.2.1",
-    "lucide-react": "^1.16.0",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.17.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.6",
     "react-day-picker": "10.0.1",
@@ -44,6 +44,6 @@
     "@vitejs/plugin-react": "^6.0.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "typescript": "6.0.3",
-    "vite": "^8.0.13"
+    "vite": "^8.0.14"
   }
 }

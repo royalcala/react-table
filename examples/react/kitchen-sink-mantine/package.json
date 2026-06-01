@@ -15,15 +15,15 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@faker-js/faker": "^10.4.0",
-    "@mantine/core": "^9.2.1",
-    "@mantine/hooks": "^9.2.1",
+    "@mantine/core": "^9.2.2",
+    "@mantine/hooks": "^9.2.2",
     "@tabler/icons-react": "^3.44.0",
-    "@tanstack/match-sorter-utils": "^9.0.0-alpha.4",
+    "@tanstack/match-sorter-utils": "workspace:*",
     "@tanstack/react-devtools": "^0.10.5",
     "@tanstack/react-pacer": "^0.22.1",
-    "@tanstack/react-table": "^9.0.0-alpha.49",
-    "@tanstack/react-table-devtools": "^9.0.0-alpha.49",
-    "date-fns": "^4.2.1",
+    "@tanstack/react-table": "workspace:*",
+    "@tanstack/react-table-devtools": "workspace:*",
+    "date-fns": "^4.4.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
@@ -38,6 +38,6 @@
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "typescript": "6.0.3",
-    "vite": "^8.0.13"
+    "vite": "^8.0.14"
   }
 }
