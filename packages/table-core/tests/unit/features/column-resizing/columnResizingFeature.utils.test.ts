@@ -38,6 +38,7 @@ function createTestResizeHeader(table: any, overrides = {}) {
   }
 
   return {
+    table,
     column: baseColumn,
     getLeafHeaders: () => [
       {
