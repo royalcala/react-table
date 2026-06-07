@@ -78,22 +78,16 @@ const stressTest = () => {
   data.value = makeData(1_000)
 }
 
-const table = useTable(
-  {
-    features,
-    data,
-    get columns() {
-      return columns.value
-    },
-    debugTable: true,
-    debugHeaders: true,
-    debugColumns: true,
+const table = useTable({
+  features,
+  data,
+  get columns() {
+    return columns.value
   },
-  (state) => ({
-    columnOrder: state.columnOrder,
-    columnVisibility: state.columnVisibility,
-  }),
-)
+  debugTable: true,
+  debugHeaders: true,
+  debugColumns: true,
+})
 
 const randomizeColumns = () => {
   table.setColumnOrder(
@@ -107,7 +101,7 @@ const randomizeColumns = () => {
 
 function toggleColumnVisibility(column: Column<typeof features, Person>) {
   table.setColumnVisibility({
-    ...table.state.columnVisibility,
+    ...table.atoms.columnVisibility.get(),
     [column.id]: !column.getIsVisible(),
   })
 }
@@ -201,7 +195,7 @@ function toggleAllColumnsVisibility() {
         </tr>
       </tfoot>
     </table>
-    <pre>{{ JSON.stringify(table.state.columnOrder, null, 2) }}</pre>
+    <pre>{{ JSON.stringify(table.atoms.columnOrder.get(), null, 2) }}</pre>
   </div>
 </template>
 

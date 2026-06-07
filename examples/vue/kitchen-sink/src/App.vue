@@ -161,47 +161,44 @@ const columns = ref(
 
 const data = ref(makeData(1_000))
 
-const table = useTable(
-  {
-    key: 'kitchen-sink', // needed for devtools
-    features: stockFeatures,
-    rowModels: {
-      expandedRowModel: createExpandedRowModel(),
-      filteredRowModel: createFilteredRowModel({
-        ...filterFns,
-        fuzzy: fuzzyFilter,
-      }),
-      facetedRowModel: createFacetedRowModel(),
-      facetedMinMaxValues: createFacetedMinMaxValues(),
-      facetedUniqueValues: createFacetedUniqueValues(),
-      groupedRowModel: createGroupedRowModel(aggregationFns),
-      paginatedRowModel: createPaginatedRowModel(),
-      sortedRowModel: createSortedRowModel(sortFns),
-    },
-    data,
-    get columns() {
-      return columns.value
-    },
-    getSubRows: (row: Person) => row.subRows,
-    globalFilterFn: 'fuzzy',
-    columnResizeMode: 'onChange',
-    defaultColumn: { minSize: 200, maxSize: 800 },
-    initialState: {
-      columnOrder: columns.value.map((c) => c.id!),
-      columnPinning: { left: ['select'], right: [] },
-      pagination: { pageIndex: 0, pageSize: 20 },
-    },
-    keepPinnedRows: true,
-    debugTable: true,
+const table = useTable({
+  key: 'kitchen-sink', // needed for devtools
+  features: stockFeatures,
+  rowModels: {
+    expandedRowModel: createExpandedRowModel(),
+    filteredRowModel: createFilteredRowModel({
+      ...filterFns,
+      fuzzy: fuzzyFilter,
+    }),
+    facetedRowModel: createFacetedRowModel(),
+    facetedMinMaxValues: createFacetedMinMaxValues(),
+    facetedUniqueValues: createFacetedUniqueValues(),
+    groupedRowModel: createGroupedRowModel(aggregationFns),
+    paginatedRowModel: createPaginatedRowModel(),
+    sortedRowModel: createSortedRowModel(sortFns),
   },
-  (state) => state,
-)
+  data,
+  get columns() {
+    return columns.value
+  },
+  getSubRows: (row: Person) => row.subRows,
+  globalFilterFn: 'fuzzy',
+  columnResizeMode: 'onChange',
+  defaultColumn: { minSize: 200, maxSize: 800 },
+  initialState: {
+    columnOrder: columns.value.map((c) => c.id!),
+    columnPinning: { left: ['select'], right: [] },
+    pagination: { pageIndex: 0, pageSize: 20 },
+  },
+  keepPinnedRows: true,
+  debugTable: true,
+})
 
 useTanStackTableDevtools(table)
 
 const columnSizeVars = computed(() => {
-  void table.state.columnResizing
-  void table.state.columnSizing
+  void table.atoms.columnResizing.get()
+  void table.atoms.columnSizing.get()
   const colSizes: Record<string, number> = {}
   for (const header of table.getFlatHeaders()) {
     colSizes[`--header-${header.id}-size`] = header.getSize()
@@ -264,7 +261,7 @@ function cellStyle(cell: Cell<typeof stockFeatures, Person, unknown>) {
 }
 
 function cellClass(cell: Cell<typeof stockFeatures, Person, unknown>) {
-  const groupingActive = table.state.grouping.length > 0
+  const groupingActive = table.atoms.grouping.get().length > 0
   const hasAggregation = !!cell.column.columnDef.aggregationFn
   return !groupingActive
     ? undefined
@@ -341,7 +338,7 @@ function shuffleColumns() {
         <input
           class="global-filter-input"
           placeholder="Fuzzy search all columns..."
-          :value="table.state.globalFilter ?? ''"
+          :value="table.atoms.globalFilter.get() ?? ''"
           @input="
             (event) =>
               debounceSet('global', () =>
@@ -738,7 +735,7 @@ function shuffleColumns() {
       <span class="inline-controls">
         <div>Page</div>
         <strong>
-          {{ (table.state.pagination.pageIndex + 1).toLocaleString() }} of
+          {{ (table.atoms.pagination.get().pageIndex + 1).toLocaleString() }} of
           {{ table.getPageCount().toLocaleString() }}
         </strong>
       </span>
@@ -748,7 +745,7 @@ function shuffleColumns() {
           type="number"
           min="1"
           :max="table.getPageCount()"
-          :value="table.state.pagination.pageIndex + 1"
+          :value="table.atoms.pagination.get().pageIndex + 1"
           @input="
             table.setPageIndex(
               ($event.target as HTMLInputElement).value
@@ -760,7 +757,7 @@ function shuffleColumns() {
         />
       </span>
       <select
-        :value="table.state.pagination.pageSize"
+        :value="table.atoms.pagination.get().pageSize"
         @change="
           table.setPageSize(Number(($event.target as HTMLSelectElement).value))
         "
@@ -783,7 +780,9 @@ function shuffleColumns() {
     <div class="spacer-md" />
     <details>
       <summary>Table state (live)</summary>
-      <pre class="state-dump">{{ JSON.stringify(table.state, null, 2) }}</pre>
+      <pre class="state-dump">{{
+        JSON.stringify(table.store.get(), null, 2)
+      }}</pre>
     </details>
   </div>
 </template>

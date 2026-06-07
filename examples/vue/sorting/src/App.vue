@@ -57,18 +57,15 @@ const stressTest = () => {
   data.value = makeData(500_000)
 }
 
-const table = useTable(
-  {
-    features,
-    rowModels: {
-      sortedRowModel: createSortedRowModel(sortFns),
-    },
-    data,
-    columns,
-    debugTable: true,
+const table = useTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
   },
-  (state) => ({ sorting: state.sorting }),
-)
+  data,
+  columns,
+  debugTable: true,
+})
 </script>
 
 <template>
@@ -134,7 +131,7 @@ const table = useTable(
 
     <div>{{ table.getRowModel().rows.length.toLocaleString() }} Rows</div>
 
-    <pre>{{ JSON.stringify(table.state.sorting, null, 2) }}</pre>
+    <pre>{{ JSON.stringify(table.atoms.sorting.get(), null, 2) }}</pre>
   </div>
 </template>
 
