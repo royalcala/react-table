@@ -15,7 +15,7 @@ TanStack Table v9 is a major release that introduces significant architectural i
 
 - **Uses TanStack Store**: The internal state system has been rebuilt on [TanStack Store](https://tanstack.com/store), providing a reactive, framework-agnostic foundation. This works similarly to TanStack Form's state model.
 - **Three-layer atom architecture**: Each state slice (sorting, pagination, rowSelection, etc.) lives in its own [atom](https://tanstack.com/store/latest/docs/reference/atom) rather than a single monolithic state object. Internally, the library writes to per-slice `baseAtoms`; reads go through derived `table.atoms` and the flat `table.store`. This enables fine-grained reactivity — components can subscribe to just the slices they care about.
-- **Opt-in subscriptions instead of memo hacks**: Use `table.Subscribe` or pass a selector to `useTable` to subscribe to specific slices of state. Only re-render when the state you care about changes—no more `React.memo` or manual memoization. Pass `state => state` if you want v8-style behavior where any state change triggers a re-render.
+- **Default full-state subscription, optional narrower selectors**: By default, `useTable` selects all registered table state, so `table.state` contains the full state and the component re-renders when any registered state changes. Pass a narrower selector or use `table.Subscribe` when only part of the UI should re-render.
 - **Bring your own atoms (optional)**: For advanced use cases, you can own individual state slices by passing your own writable atoms via the new `atoms` option. This is great for sharing a slice across components or integrating with other atom-based tools. Precedence: `options.atoms[key]` > `options.state[key]` > internal `baseAtoms[key]`.
 
 ### 3. Composability
@@ -27,7 +27,7 @@ TanStack Table v9 is a major release that introduces significant architectural i
 
 While v9 is a significant upgrade, **you don't have to adopt everything at once**:
 
-- **Don't want to optimize renders?** Pass `state => state` as the selector to `useTable` and rendering works like v8.
+- **Don't want to optimize renders yet?** Do nothing special. The default selector selects all registered state, so rendering works like v8.
 - **Don't want to think about tree-shaking?** Import `stockFeatures` to include all features, just like v8.
 - **Table markup is largely unchanged.** How you render `<table>`, `<thead>`, `<tr>`, `<td>`, etc. remains the same.
 
@@ -277,7 +277,7 @@ v9's state system is built on [TanStack Store](https://tanstack.com/store) and e
 
 | Surface | Type | When to use |
 |---------|------|-------------|
-| `table.state` | `TSelected` (the shape you return from your `useTable` selector) | The most ergonomic read surface inside a component rendered by `useTable`. |
+| `table.state` | `TSelected` (full registered table state by default, or the shape returned from your custom `useTable` selector) | The most ergonomic read surface inside a component rendered by `useTable`. |
 | `table.store` | `ReadonlyStore<TableState>` | A flat, framework-agnostic store of the entire table state. Use `table.store.state` for one-off reads, or pair with `useSelector` / `table.Subscribe` for fine-grained subscriptions. |
 | `table.atoms.<slice>` | `ReadonlyAtom<TableState[slice]>` | A per-slice readonly atom. Subscribe to a single slice (e.g. `table.atoms.sorting`) when you want the narrowest possible re-render surface. |
 
@@ -301,13 +301,22 @@ const { sorting, pagination } = table.getState()
 const fullState = table.store.state
 const { sorting, pagination } = table.store.state
 
-// v9 - via table.state (selected state from your selector)
-const table = useTable(options, (state) => ({
+// v9 - via table.state (full selected state by default)
+const table = useTable({
+  features,
+  rowModels: { /* ... */ },
+  columns,
+  data,
+})
+const { sorting, pagination } = table.state
+
+// v9 - via table.state with a custom selector
+const selectedTable = useTable(options, (state) => ({
   sorting: state.sorting,
   pagination: state.pagination,
 }))
-// Now table.state only contains sorting and pagination
-const { sorting, pagination } = table.state
+// Now selectedTable.state only contains sorting and pagination
+const { sorting, pagination } = selectedTable.state
 
 // v9 - via a single slice atom (framework-agnostic, ideal for fine-grained subscriptions)
 const sorting = table.atoms.sorting.get()
@@ -345,25 +354,23 @@ function MyTable() {
 }
 ```
 
-### Opt-Out: v8-Style Full State Subscription
+### Default: v8-Style Full State Subscription
 
-If you want v8-style behavior where the component re-renders on any state change, pass `state => state` as the selector:
+The default selector already gives v8-style behavior where the component re-renders on any registered table state change:
 
 ```tsx
-// Re-renders on ANY state change (like v8)
-const table = useTable(
-  {
-    features,
-    rowModels: { /* ... */ },
-    columns,
-    data,
-  },
-  (state) => state, // Subscribe to entire state
-)
+const table = useTable({
+  features,
+  rowModels: { /* ... */ },
+  columns,
+  data,
+})
 
-// table.state now contains the full state
+// table.state contains the full registered state
 const { sorting, pagination, columnFilters } = table.state
 ```
+
+Passing `(state) => state` is equivalent to the default and is no longer necessary. Pass a custom selector when you want `table.state` to contain only specific slices, or pass `() => null` and use `table.Subscribe` lower in the tree when the parent should not re-render for table state changes.
 
 ### Controlled State
 

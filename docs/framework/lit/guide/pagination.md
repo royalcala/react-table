@@ -89,8 +89,6 @@ const table = this.tableController.table({
 })
 ```
 
-> **Migrating from v8?** See [useLegacyTable](../../react/guide/use-legacy-table) for incremental migration.
-
 ### Manual Server-Side Pagination
 
 If you decide that you need to use server-side pagination, here is how you can implement it.

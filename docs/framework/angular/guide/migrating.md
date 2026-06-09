@@ -30,18 +30,6 @@ While v9 is a significant upgrade, **you don't have to adopt everything at once*
 
 The main change is **how you define a table** with the Angular adapter — specifically the new `features` and `rowModels` options.
 
----
-
-## Quick Legacy Migration
-
-Angular does **not** ship a legacy API.
-
-If you're migrating an Angular project from TanStack Table v8 to v9, you will migrate directly to the v9 Angular adapter APIs (`injectTable`, `features`, and `rowModels`).
-
----
-
-The rest of this guide focuses on migrating to the full v9 API and taking advantage of its features.
-
 ## Core Breaking Changes
 
 ### Entrypoint Change

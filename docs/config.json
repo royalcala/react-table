@@ -27,7 +27,8 @@
         {
           "label": "lit",
           "children": [
-            { "label": "Lit Table Adapter", "to": "framework/lit/lit-table" }
+            { "label": "Lit Table Adapter", "to": "framework/lit/lit-table" },
+            { "label": "Migrating to V9", "to": "framework/lit/guide/migrating" }
           ]
         },
         {
@@ -41,25 +42,29 @@
         {
           "label": "preact",
           "children": [
-            { "label": "Preact Table Adapter", "to": "framework/preact/preact-table" }
+            { "label": "Preact Table Adapter", "to": "framework/preact/preact-table" },
+            { "label": "Migrating to V9", "to": "framework/preact/guide/migrating" }
           ]
         },
         {
           "label": "solid",
           "children": [
-            { "label": "Solid Table Adapter", "to": "framework/solid/solid-table" }
+            { "label": "Solid Table Adapter", "to": "framework/solid/solid-table" },
+            { "label": "Migrating to V9", "to": "framework/solid/guide/migrating" }
           ]
         },
         {
           "label": "svelte",
           "children": [
-            { "label": "Svelte Table Adapter", "to": "framework/svelte/svelte-table" }
+            { "label": "Svelte Table Adapter", "to": "framework/svelte/svelte-table" },
+            { "label": "Migrating to V9", "to": "framework/svelte/guide/migrating" }
           ]
         },
         {
           "label": "vue",
           "children": [
-            { "label": "Vue Table Adapter", "to": "framework/vue/vue-table" }
+            { "label": "Vue Table Adapter", "to": "framework/vue/vue-table" },
+            { "label": "Migrating to V9", "to": "framework/vue/guide/migrating" }
           ]
         },
         {
