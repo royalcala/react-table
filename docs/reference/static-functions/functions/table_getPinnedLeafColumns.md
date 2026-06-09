@@ -6,7 +6,7 @@ title: table_getPinnedLeafColumns
 # Function: table\_getPinnedLeafColumns()
 
 ```ts
-function table_getPinnedLeafColumns<TFeatures, TData>(table, position): any[];
+function table_getPinnedLeafColumns<TFeatures, TData>(table, position): Column<TFeatures, TData, unknown>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:767](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L767)
@@ -38,7 +38,7 @@ read all leaf columns without partitioning.
 
 ## Returns
 
-`any`[]
+[`Column`](../../index/type-aliases/Column.md)\<`TFeatures`, `TData`, `unknown`\>[]
 
 ## Example
 

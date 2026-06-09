@@ -29,7 +29,7 @@ The factory reads the relevant table state atoms and options, then returns a row
 
 ### filterFns
 
-`Record`\<keyof [`FilterFns`](../interfaces/FilterFns.md), [`FilterFn`](../interfaces/FilterFn.md)\<`TFeatures`, `TData`\>\>
+`Record`\<keyof [`FilterFns`](../interfaces/FilterFns.md), [`FilterFn`](../interfaces/FilterFn.md)\<`TFeatures`, [`RowData`](../type-aliases/RowData.md)\>\>
 
 ## Returns
 

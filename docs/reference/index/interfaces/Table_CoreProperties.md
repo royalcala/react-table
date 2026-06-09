@@ -47,10 +47,10 @@ Prototype cache for Column objects - shared by all columns in this table
 
 ***
 
-### \features
+### \_features
 
 ```ts
-readonly features: Partial<CoreFeatures> & TFeatures;
+readonly _features: Partial<CoreFeatures> & TFeatures;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:150](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L150)
@@ -95,10 +95,10 @@ The row model processing functions that are used to process the data by features
 
 ***
 
-### \rowModels
+### \_rowModels
 
 ```ts
-readonly rowModels: CachedRowModels<TFeatures, TData>;
+readonly _rowModels: CachedRowModels<TFeatures, TData>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:162](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L162)
@@ -149,7 +149,7 @@ single write surface — all state mutations from features land here.
 ### initialState
 
 ```ts
-readonly initialState: TableState<TFeatures>;
+readonly initialState: ExtractFeatureMapTypes<TFeatures>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:181](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L181)
@@ -187,7 +187,7 @@ options as plain resolved data instead of backing them with an atom.
 ### store
 
 ```ts
-readonly store: ReadonlyStore<TableState<TFeatures>>;
+readonly store: ReadonlyStore<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:196](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L196)

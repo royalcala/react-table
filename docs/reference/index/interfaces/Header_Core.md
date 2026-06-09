@@ -5,7 +5,7 @@ title: Header_Core
 
 # Interface: Header\_Core\<TFeatures, TData, TValue\>
 
-Defined in: [types/Header.ts:17](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/Header.ts#L17)
+Defined in: [types/Header.ts:7](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/Header.ts#L7)
 
 ## Extends
 

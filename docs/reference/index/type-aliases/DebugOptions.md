@@ -9,7 +9,7 @@ title: DebugOptions
 type DebugOptions<TFeatures> = object & DebugKeysFor<CoreFeatures & TFeatures>;
 ```
 
-Defined in: [types/TableOptions.ts:45](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/TableOptions.ts#L45)
+Defined in: [types/TableOptions.ts:40](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/TableOptions.ts#L40)
 
 ## Type Declaration
 

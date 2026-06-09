@@ -6,7 +6,7 @@ title: table_getPinnedVisibleLeafColumns
 # Function: table\_getPinnedVisibleLeafColumns()
 
 ```ts
-function table_getPinnedVisibleLeafColumns<TFeatures, TData>(table, position?): any[];
+function table_getPinnedVisibleLeafColumns<TFeatures, TData>(table, position?): Column<TFeatures, TData, unknown>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:878](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L878)
@@ -38,7 +38,7 @@ or `'right'` to get one partition.
 
 ## Returns
 
-`any`[]
+[`Column`](../../index/type-aliases/Column.md)\<`TFeatures`, `TData`, `unknown`\>[]
 
 ## Example
 

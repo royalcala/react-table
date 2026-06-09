@@ -165,7 +165,7 @@ export class App {
 }
 ```
 
-See the [Table Composition Guide](./guide/table-composition.md) and the [Composable Tables example](./examples/composable-tables) for the full pattern.
+See the [Composable Tables Guide](./guide/composable-tables.md) and the [Composable Tables example](./examples/composable-tables) for the full pattern.
 
 ## API Reference
 

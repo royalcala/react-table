@@ -6,17 +6,16 @@ title: createTable
 # Function: createTable()
 
 ```ts
-function createTable<TFeatures, TData, TSelected>(tableOptions, selector?): SolidTable<TFeatures, TData, TSelected>;
+function createTable<TFeatures, TData>(tableOptions): SolidTable<TFeatures, TData>;
 ```
 
-Defined in: [createTable.ts:109](https://github.com/TanStack/table/blob/main/packages/solid-table/src/createTable.ts#L109)
+Defined in: [createTable.ts:69](https://github.com/TanStack/table/blob/main/packages/solid-table/src/createTable.ts#L69)
 
 Creates a Solid table instance backed by Solid-aware TanStack Store atoms.
 
-The optional selector projects from `table.store`; the selected value is
-exposed as the `table.state` accessor. Table APIs and atom reads participate
-in Solid dependency tracking, so computations that read a specific slice can
-update without invalidating unrelated UI.
+Table APIs and atom reads participate in Solid dependency tracking, so
+computations that read a specific slice can update without invalidating
+unrelated UI. Use `table.Subscribe` to create atom-tracked render boundaries.
 
 ## Type Parameters
 
@@ -28,23 +27,15 @@ update without invalidating unrelated UI.
 
 `TData` *extends* `RowData`
 
-### TSelected
-
-`TSelected` = `TableState`\<`TFeatures`\>
-
 ## Parameters
 
 ### tableOptions
 
 `TableOptions`\<`TFeatures`, `TData`\>
 
-### selector?
-
-(`state`) => `TSelected`
-
 ## Returns
 
-[`SolidTable`](../type-aliases/SolidTable.md)\<`TFeatures`, `TData`, `TSelected`\>
+[`SolidTable`](../type-aliases/SolidTable.md)\<`TFeatures`, `TData`\>
 
 ## Example
 
@@ -56,8 +47,5 @@ const table = createTable(
     columns,
     data,
   },
-  (state) => ({ pagination: state.pagination }),
 )
-
-table.state().pagination
 ```

@@ -11,7 +11,7 @@ function column_getAggregationFn<TFeatures, TData, TValue>(column):
   | undefined;
 ```
 
-Defined in: [features/column-grouping/columnGroupingFeature.utils.ts:184](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-grouping/columnGroupingFeature.utils.ts#L184)
+Defined in: [features/column-grouping/columnGroupingFeature.utils.ts:183](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-grouping/columnGroupingFeature.utils.ts#L183)
 
 Resolves the aggregation function configured for a column.
 

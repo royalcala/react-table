@@ -9,7 +9,7 @@ title: Table_Internal
 type Table_Internal<TFeatures, TData> = Table<TFeatures, TData> & object;
 ```
 
-Defined in: [types/Table.ts:116](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/Table.ts#L116)
+Defined in: [types/Table.ts:75](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/Table.ts#L75)
 
 ## Type Declaration
 
@@ -19,10 +19,10 @@ Defined in: [types/Table.ts:116](https://github.com/TanStack/table/blob/main/pac
 _rowModelFns: RowModelFns_All<TFeatures, TData>;
 ```
 
-### \rowModels
+### \_rowModels
 
 ```ts
-rowModels: CachedRowModel_All<TFeatures, TData>;
+_rowModels: CachedRowModel_All<TFeatures, TData>;
 ```
 
 ### atoms
@@ -51,12 +51,6 @@ options: TableOptions_All<TFeatures, TData> & object;
 
 #### Type Declaration
 
-##### \rowModels?
-
-```ts
-optional rowModels: CreateRowModels_All<TFeatures, TData>;
-```
-
 ##### atoms?
 
 ```ts
@@ -67,6 +61,12 @@ optional atoms: ExternalAtoms_All;
 
 ```ts
 optional initialState: TableState_All;
+```
+
+##### rowModels?
+
+```ts
+optional rowModels: CreateRowModels_All<TFeatures, TData>;
 ```
 
 ##### state?

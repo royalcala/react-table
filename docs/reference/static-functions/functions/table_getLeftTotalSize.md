@@ -6,7 +6,7 @@ title: table_getLeftTotalSize
 # Function: table\_getLeftTotalSize()
 
 ```ts
-function table_getLeftTotalSize<TFeatures, TData>(table): any;
+function table_getLeftTotalSize<TFeatures, TData>(table): number;
 ```
 
 Defined in: [features/column-sizing/columnSizingFeature.utils.ts:318](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-sizing/columnSizingFeature.utils.ts#L318)
@@ -33,7 +33,7 @@ An empty left pinning region returns `0`.
 
 ## Returns
 
-`any`
+`number`
 
 ## Example
 

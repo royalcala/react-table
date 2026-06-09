@@ -6,7 +6,7 @@ title: TanStackTableHeaderToken
 # Variable: TanStackTableHeaderToken
 
 ```ts
-const TanStackTableHeaderToken: InjectionToken<Signal<any>>;
+const TanStackTableHeaderToken: InjectionToken<Signal<Header<TableFeatures, RowData, unknown>>>;
 ```
 
 Defined in: [packages/angular-table/src/helpers/header.ts:25](https://github.com/TanStack/table/blob/main/packages/angular-table/src/helpers/header.ts#L25)

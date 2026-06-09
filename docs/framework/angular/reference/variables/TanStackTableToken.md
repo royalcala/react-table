@@ -6,7 +6,7 @@ title: TanStackTableToken
 # Variable: TanStackTableToken
 
 ```ts
-const TanStackTableToken: InjectionToken<Signal<any>>;
+const TanStackTableToken: InjectionToken<Signal<AngularTable<TableFeatures, RowData>>>;
 ```
 
 Defined in: [packages/angular-table/src/helpers/table.ts:11](https://github.com/TanStack/table/blob/main/packages/angular-table/src/helpers/table.ts#L11)

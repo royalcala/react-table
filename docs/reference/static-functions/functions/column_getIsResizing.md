@@ -9,7 +9,7 @@ title: column_getIsResizing
 function column_getIsResizing<TFeatures, TData, TValue>(column): boolean;
 ```
 
-Defined in: [features/column-resizing/columnResizingFeature.utils.ts:70](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L70)
+Defined in: [features/column-resizing/columnResizingFeature.utils.ts:69](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L69)
 
 Checks whether this column is the active column resize target.
 

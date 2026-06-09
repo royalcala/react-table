@@ -6,7 +6,7 @@ title: table_getRightFooterGroups
 # Function: table\_getRightFooterGroups()
 
 ```ts
-function table_getRightFooterGroups<TFeatures, TData>(table): any[];
+function table_getRightFooterGroups<TFeatures, TData>(table): HeaderGroup<TFeatures, TData>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:494](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L494)
@@ -33,7 +33,7 @@ Footer groups reuse the right header groups in reverse order.
 
 ## Returns
 
-`any`[]
+[`HeaderGroup`](../../index/type-aliases/HeaderGroup.md)\<`TFeatures`, `TData`\>[]
 
 ## Example
 

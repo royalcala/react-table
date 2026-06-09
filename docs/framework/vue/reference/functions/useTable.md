@@ -6,17 +6,17 @@ title: useTable
 # Function: useTable()
 
 ```ts
-function useTable<TFeatures, TData, TSelected>(tableOptions, selector?): VueTable<TFeatures, TData, TSelected>;
+function useTable<TFeatures, TData>(tableOptions): VueTable<TFeatures, TData>;
 ```
 
-Defined in: [packages/vue-table/src/useTable.ts:140](https://github.com/TanStack/table/blob/main/packages/vue-table/src/useTable.ts#L140)
+Defined in: [packages/vue-table/src/useTable.ts:85](https://github.com/TanStack/table/blob/main/packages/vue-table/src/useTable.ts#L85)
 
 Creates a Vue table instance backed by Vue-aware TanStack Store atoms.
 
 Table options may contain Vue refs or computed values. The adapter unwraps
 those reactive inputs, watches them with synchronous flushing, and keeps the
-table options in sync. The optional selector projects from `table.store` and
-exposes the selected value on `table.state`.
+table options in sync. Use `table.Subscribe` or native Vue computed values
+around `table.atoms.<slice>.get()` for selected reactive reads.
 
 ## Type Parameters
 
@@ -28,23 +28,15 @@ exposes the selected value on `table.state`.
 
 `TData` *extends* `RowData`
 
-### TSelected
-
-`TSelected` = `TableState`\<`TFeatures`\>
-
 ## Parameters
 
 ### tableOptions
 
 `TableOptions`\<`TFeatures`, `TData`\> | [`TableOptionsWithReactiveData`](../type-aliases/TableOptionsWithReactiveData.md)\<`TFeatures`, `TData`\>
 
-### selector?
-
-(`state`) => `TSelected`
-
 ## Returns
 
-[`VueTable`](../type-aliases/VueTable.md)\<`TFeatures`, `TData`, `TSelected`\>
+[`VueTable`](../type-aliases/VueTable.md)\<`TFeatures`, `TData`\>
 
 ## Example
 
@@ -56,8 +48,5 @@ const table = useTable(
     columns,
     data,
   },
-  (state) => ({ pagination: state.pagination }),
 )
-
-table.state.pagination
 ```

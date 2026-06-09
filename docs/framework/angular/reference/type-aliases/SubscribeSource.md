@@ -13,7 +13,7 @@ type SubscribeSource<TValue> =
 | ReadonlyStore<TValue>;
 ```
 
-Defined in: [packages/angular-table/src/injectTable.ts:27](https://github.com/TanStack/table/blob/main/packages/angular-table/src/injectTable.ts#L27)
+Defined in: [packages/angular-table/src/injectTable.ts:26](https://github.com/TanStack/table/blob/main/packages/angular-table/src/injectTable.ts#L26)
 
 ## Type Parameters
 

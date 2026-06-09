@@ -3,13 +3,13 @@ id: SolidTable
 title: SolidTable
 ---
 
-# Type Alias: SolidTable\<TFeatures, TData, TSelected\>
+# Type Alias: SolidTable\<TFeatures, TData\>
 
 ```ts
-type SolidTable<TFeatures, TData, TSelected> = Omit<Table<TFeatures, TData>, "store"> & object;
+type SolidTable<TFeatures, TData> = Omit<Table<TFeatures, TData>, "store"> & object;
 ```
 
-Defined in: [createTable.ts:27](https://github.com/TanStack/table/blob/main/packages/solid-table/src/createTable.ts#L27)
+Defined in: [createTable.ts:20](https://github.com/TanStack/table/blob/main/packages/solid-table/src/createTable.ts#L20)
 
 ## Type Declaration
 
@@ -31,24 +31,6 @@ rendering headers, cells, or footers with custom markup. Mirrors the
 <table.FlexRender footer={footer} />
 ```
 
-### state
-
-```ts
-readonly state: Accessor<Readonly<TSelected>>;
-```
-
-The selected state of the table. This state may not match the structure of
-the full table state because it is selected by the selector function that
-you pass as the 2nd argument to `createTable`.
-
-#### Example
-
-```ts
-const table = createTable(options, (state) => ({ globalFilter: state.globalFilter })) // only globalFilter is part of the selected state
-
-console.log(table.state().globalFilter)
-```
-
 ### ~~store~~
 
 ```ts
@@ -57,122 +39,30 @@ readonly store: Table<TFeatures, TData>["store"];
 
 #### Deprecated
 
-Prefer `table.state()` for component-level reactive reads,
-`table.atoms.<slice>.get()` for slice-level reactive reads, or
-`table.Subscribe` / `useSelector(table.store, selector)` for explicit
-subscriptions. Reading `table.state` directly does not follow Solid's
-accessor convention and may not update render code as expected.
+Prefer `table.atoms.<slice>.get()` for slice-level reactive
+reads, or `table.Subscribe` for explicit subscriptions. `table.store.state`
+is a current-value snapshot and is easy to misuse in render code.
 
 ### Subscribe()
 
 ```ts
-Subscribe: {
-<TSourceValue>  (props): Element;
-<TSourceValue, TSubSelected>  (props): Element;
-<TSubSelected>  (props): Element;
-};
+Subscribe: (props) => JSX.Element;
 ```
 
-Subscribe to the store (selector required) or a single source (atom or store).
-Source **without** `selector` is a separate overload so children receive
-`Accessor<TSourceValue>` (identity projection). Source overloads are listed first
-for JSX contextual typing.
+Creates a reactive render boundary. The child function reads the table
+atoms it needs, so Solid only tracks those atom reads.
 
-#### Call Signature
+#### Parameters
 
-```ts
-<TSourceValue>(props): Element;
-```
-
-##### Type Parameters
-
-###### TSourceValue
-
-`TSourceValue`
-
-##### Parameters
-
-###### props
+##### props
 
 ###### children
 
-(`state`) => `JSX.Element` \| `JSX.Element`
+(`atoms`) => `JSX.Element`
 
-###### selector?
+#### Returns
 
-`undefined`
-
-###### source
-
-[`SubscribeSource`](SubscribeSource.md)\<`TSourceValue`\>
-
-##### Returns
-
-`Element`
-
-#### Call Signature
-
-```ts
-<TSourceValue, TSubSelected>(props): Element;
-```
-
-##### Type Parameters
-
-###### TSourceValue
-
-`TSourceValue`
-
-###### TSubSelected
-
-`TSubSelected`
-
-##### Parameters
-
-###### props
-
-###### children
-
-(`state`) => `JSX.Element` \| `JSX.Element`
-
-###### selector
-
-(`state`) => `TSubSelected`
-
-###### source
-
-[`SubscribeSource`](SubscribeSource.md)\<`TSourceValue`\>
-
-##### Returns
-
-`Element`
-
-#### Call Signature
-
-```ts
-<TSubSelected>(props): Element;
-```
-
-##### Type Parameters
-
-###### TSubSelected
-
-`TSubSelected`
-
-##### Parameters
-
-###### props
-
-###### children
-
-(`state`) => `JSX.Element` \| `JSX.Element`
-
-###### selector
-
-(`state`) => `TSubSelected`
-
-##### Returns
-
-`Element`
+`JSX.Element`
 
 ## Type Parameters
 
@@ -183,7 +73,3 @@ for JSX contextual typing.
 ### TData
 
 `TData` *extends* `RowData`
-
-### TSelected
-
-`TSelected` = `TableState`\<`TFeatures`\>

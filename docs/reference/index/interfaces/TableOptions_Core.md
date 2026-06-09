@@ -5,7 +5,7 @@ title: TableOptions_Core
 
 # Interface: TableOptions\_Core\<TFeatures, TData\>
 
-Defined in: [types/TableOptions.ts:31](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/TableOptions.ts#L31)
+Defined in: [types/TableOptions.ts:26](https://github.com/TanStack/table/blob/main/packages/table-core/src/types/TableOptions.ts#L26)
 
 Core options that are always available on a table, before optional feature
 options are mixed in.
@@ -26,46 +26,10 @@ options are mixed in.
 
 ## Properties
 
-### \features
-
-```ts
-readonly features: TFeatures;
-```
-
-Defined in: [core/table/coreTablesFeature.types.ts:74](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L74)
-
-The feature modules registered on this table instance.
-
-Feature registration controls which state slices, options, and prototype
-APIs are available.
-
-#### Inherited from
-
-[`TableOptions_Table`](TableOptions_Table.md).[`features`](TableOptions_Table.md#features)
-
-***
-
-### \rowModels?
-
-```ts
-readonly optional rowModels: CreateRowModels_All<TFeatures, TData>;
-```
-
-Defined in: [core/table/coreTablesFeature.types.ts:79](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L79)
-
-Row model factories used by features such as filtering, grouping, sorting,
-expansion, and pagination.
-
-#### Inherited from
-
-[`TableOptions_Table`](TableOptions_Table.md).[`rowModels`](TableOptions_Table.md#_rowmodels)
-
-***
-
 ### atoms?
 
 ```ts
-readonly optional atoms: Partial<{ [K in string | number | symbol]: Atom<TableState<TFeatures>[K]> }>;
+readonly optional atoms: Partial<{ [K in string | number | symbol]: Atom<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>[K]> }>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:87](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L87)
@@ -143,6 +107,25 @@ Default column options to use for all column defs supplied to the table.
 #### Inherited from
 
 [`TableOptions_Columns`](TableOptions_Columns.md).[`defaultColumn`](TableOptions_Columns.md#defaultcolumn)
+
+***
+
+### features
+
+```ts
+readonly features: TFeatures;
+```
+
+Defined in: [core/table/coreTablesFeature.types.ts:74](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L74)
+
+The feature modules registered on this table instance.
+
+Feature registration controls which state slices, options, and prototype
+APIs are available.
+
+#### Inherited from
+
+[`TableOptions_Table`](TableOptions_Table.md).[`features`](TableOptions_Table.md#features)
 
 ***
 
@@ -225,7 +208,7 @@ getSubRows: row => row.subRows
 ### initialState?
 
 ```ts
-readonly optional initialState: Partial<TableState<TFeatures>>;
+readonly optional initialState: Partial<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:109](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L109)
@@ -322,10 +305,27 @@ Value used when the desired value is not found in the data.
 
 ***
 
+### rowModels?
+
+```ts
+readonly optional rowModels: CreateRowModels_All<TFeatures, TData>;
+```
+
+Defined in: [core/table/coreTablesFeature.types.ts:79](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L79)
+
+Row model factories used by features such as filtering, grouping, sorting,
+expansion, and pagination.
+
+#### Inherited from
+
+[`TableOptions_Table`](TableOptions_Table.md).[`rowModels`](TableOptions_Table.md#rowmodels)
+
+***
+
 ### state?
 
 ```ts
-readonly optional state: Partial<TableState<TFeatures>>;
+readonly optional state: Partial<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:128](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L128)

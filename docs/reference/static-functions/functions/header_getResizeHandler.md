@@ -9,7 +9,7 @@ title: header_getResizeHandler
 function header_getResizeHandler<TFeatures, TData, TValue>(header, _contextDocument?): (event) => void;
 ```
 
-Defined in: [features/column-resizing/columnResizingFeature.utils.ts:92](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L92)
+Defined in: [features/column-resizing/columnResizingFeature.utils.ts:91](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L91)
 
 Creates the pointer/touch start handler for resizing a header.
 

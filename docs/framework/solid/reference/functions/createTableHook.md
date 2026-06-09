@@ -9,7 +9,7 @@ title: createTableHook
 function createTableHook<TFeatures, TTableComponents, TCellComponents, THeaderComponents>(__namedParameters): object;
 ```
 
-Defined in: [createTableHook.tsx:611](https://github.com/TanStack/table/blob/main/packages/solid-table/src/createTableHook.tsx#L611)
+Defined in: [createTableHook.tsx:508](https://github.com/TanStack/table/blob/main/packages/solid-table/src/createTableHook.tsx#L508)
 
 Creates a custom table hook with pre-bound components for composition.
 
@@ -91,7 +91,7 @@ const columns = [
 ### createAppTable()
 
 ```ts
-createAppTable: <TData, TSelected>(tableOptions, selector?) => AppSolidTable<TFeatures, TData, TSelected, TTableComponents, TCellComponents, THeaderComponents>;
+createAppTable: <TData>(tableOptions) => AppSolidTable<TFeatures, TData, TableState<TFeatures>, TTableComponents, TCellComponents, THeaderComponents>;
 ```
 
 Enhanced useTable hook that returns a table with App wrapper components
@@ -108,23 +108,15 @@ TFeatures is already known from the createTableHook call; TData is inferred from
 
 `TData` *extends* `RowData`
 
-##### TSelected
-
-`TSelected` = `TableState`\<`TFeatures`\>
-
 #### Parameters
 
 ##### tableOptions
 
 `Omit`\<`TableOptions`\<`TFeatures`, `TData`\>, `"features"` \| `"rowModels"`\>
 
-##### selector?
-
-(`state`) => `TSelected`
-
 #### Returns
 
-[`AppSolidTable`](../type-aliases/AppSolidTable.md)\<`TFeatures`, `TData`, `TSelected`, `TTableComponents`, `TCellComponents`, `THeaderComponents`\>
+[`AppSolidTable`](../type-aliases/AppSolidTable.md)\<`TFeatures`, `TData`, `TableState`\<`TFeatures`\>, `TTableComponents`, `TCellComponents`, `THeaderComponents`\>
 
 ### useCellContext()
 
@@ -228,14 +220,16 @@ TFeatures is already known from the createTableHook call.
 function PaginationControls() {
   const table = useTableContext()
   return (
-    <table.Subscribe selector={(s) => s.pagination}>
-      {(pagination) => (
+    <table.Subscribe>
+      {(atoms) => {
+        const pagination = atoms.pagination.get()
+        return (
         <div>
           <button onClick={() => table.previousPage()}>Prev</button>
           <span>Page {pagination.pageIndex + 1}</span>
           <button onClick={() => table.nextPage()}>Next</button>
         </div>
-      )}
+      )}}
     </table.Subscribe>
   )
 }
@@ -273,7 +267,11 @@ const columnHelper = createAppColumnHelper<Person>()
 // components/table-components.tsx
 function PaginationControls() {
   const table = useTableContext() // TFeatures already known!
-  return <table.Subscribe selector={(s) => s.pagination}>...</table.Subscribe>
+  return (
+    <table.Subscribe>
+      {(atoms) => <span>Page {atoms.pagination.get().pageIndex + 1}</span>}
+    </table.Subscribe>
+  )
 }
 
 // features/users.tsx

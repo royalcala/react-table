@@ -5,7 +5,7 @@ title: LegacyRowModelOptions
 
 # Interface: LegacyRowModelOptions\<TData\>
 
-Defined in: [useLegacyTable.ts:193](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L193)
+Defined in: [useLegacyTable.ts:194](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L194)
 
 Legacy v8-style row model options
 
@@ -23,7 +23,7 @@ Legacy v8-style row model options
 optional aggregationFns: AggregationFns;
 ```
 
-Defined in: [useLegacyTable.ts:253](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L253)
+Defined in: [useLegacyTable.ts:254](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L254)
 
 Additional aggregation functions to apply to the table.
 
@@ -39,7 +39,7 @@ Use `rowModels.groupedRowModel` with `createGroupedRowModel(aggregationFns)` ins
 optional filterFns: FilterFns;
 ```
 
-Defined in: [useLegacyTable.ts:243](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L243)
+Defined in: [useLegacyTable.ts:244](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L244)
 
 Additional filter functions to apply to the table.
 
@@ -55,7 +55,7 @@ Use `rowModels.filteredRowModel` with `createFilteredRowModel(filterFns)` instea
 optional getCoreRowModel: RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:198](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L198)
+Defined in: [useLegacyTable.ts:199](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L199)
 
 Returns the core row model for the table.
 
@@ -71,7 +71,7 @@ This option is no longer needed in v9. The core row model is always created auto
 optional getExpandedRowModel: RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:218](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L218)
+Defined in: [useLegacyTable.ts:219](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L219)
 
 Returns the expanded row model for the table.
 
@@ -87,7 +87,7 @@ Use `rowModels.expandedRowModel` with `createExpandedRowModel()` instead.
 optional getFacetedMinMaxValues: FacetedMinMaxValuesFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:233](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L233)
+Defined in: [useLegacyTable.ts:234](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L234)
 
 Returns the faceted min/max values for a column.
 
@@ -103,7 +103,7 @@ Use `rowModels.facetedMinMaxValues` with `createFacetedMinMaxValues()` instead.
 optional getFacetedRowModel: FacetedRowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:228](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L228)
+Defined in: [useLegacyTable.ts:229](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L229)
 
 Returns the faceted row model for a column.
 
@@ -119,7 +119,7 @@ Use `rowModels.facetedRowModel` with `createFacetedRowModel()` instead.
 optional getFacetedUniqueValues: FacetedUniqueValuesFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:238](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L238)
+Defined in: [useLegacyTable.ts:239](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L239)
 
 Returns the faceted unique values for a column.
 
@@ -135,7 +135,7 @@ Use `rowModels.facetedUniqueValues` with `createFacetedUniqueValues()` instead.
 optional getFilteredRowModel: RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:203](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L203)
+Defined in: [useLegacyTable.ts:204](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L204)
 
 Returns the filtered row model for the table.
 
@@ -151,7 +151,7 @@ Use `rowModels.filteredRowModel` with `createFilteredRowModel(filterFns)` instea
 optional getGroupedRowModel: RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:223](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L223)
+Defined in: [useLegacyTable.ts:224](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L224)
 
 Returns the grouped row model for the table.
 
@@ -167,7 +167,7 @@ Use `rowModels.groupedRowModel` with `createGroupedRowModel(aggregationFns)` ins
 optional getPaginationRowModel: RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:213](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L213)
+Defined in: [useLegacyTable.ts:214](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L214)
 
 Returns the paginated row model for the table.
 
@@ -183,7 +183,7 @@ Use `rowModels.paginatedRowModel` with `createPaginatedRowModel()` instead.
 optional getSortedRowModel: RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:208](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L208)
+Defined in: [useLegacyTable.ts:209](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L209)
 
 Returns the sorted row model for the table.
 
@@ -199,7 +199,7 @@ Use `rowModels.sortedRowModel` with `createSortedRowModel(sortFns)` instead.
 optional sortFns: SortFns;
 ```
 
-Defined in: [useLegacyTable.ts:248](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L248)
+Defined in: [useLegacyTable.ts:249](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L249)
 
 Additional sort functions to apply to the table.
 

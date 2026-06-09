@@ -6,7 +6,7 @@ title: table_getCenterTotalSize
 # Function: table\_getCenterTotalSize()
 
 ```ts
-function table_getCenterTotalSize<TFeatures, TData>(table): any;
+function table_getCenterTotalSize<TFeatures, TData>(table): number;
 ```
 
 Defined in: [features/column-sizing/columnSizingFeature.utils.ts:343](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-sizing/columnSizingFeature.utils.ts#L343)
@@ -33,7 +33,7 @@ An empty center region returns `0`.
 
 ## Returns
 
-`any`
+`number`
 
 ## Example
 

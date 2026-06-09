@@ -6,7 +6,7 @@ title: table_getCenterFooterGroups
 # Function: table\_getCenterFooterGroups()
 
 ```ts
-function table_getCenterFooterGroups<TFeatures, TData>(table): any[];
+function table_getCenterFooterGroups<TFeatures, TData>(table): HeaderGroup<TFeatures, TData>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:516](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L516)
@@ -33,7 +33,7 @@ Footer groups reuse the center header groups in reverse order.
 
 ## Returns
 
-`any`[]
+[`HeaderGroup`](../../index/type-aliases/HeaderGroup.md)\<`TFeatures`, `TData`\>[]
 
 ## Example
 

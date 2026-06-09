@@ -6,7 +6,7 @@ title: table_getRightVisibleLeafColumns
 # Function: table\_getRightVisibleLeafColumns()
 
 ```ts
-function table_getRightVisibleLeafColumns<TFeatures, TData>(table): any[];
+function table_getRightVisibleLeafColumns<TFeatures, TData>(table): Column_Internal<TFeatures, TData, unknown>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:830](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L830)
@@ -33,7 +33,7 @@ Hidden pinned columns are filtered out after the right pin order is applied.
 
 ## Returns
 
-`any`[]
+[`Column_Internal`](../../index/type-aliases/Column_Internal.md)\<`TFeatures`, `TData`, `unknown`\>[]
 
 ## Example
 

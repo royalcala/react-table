@@ -55,10 +55,10 @@ Prototype cache for Column objects - shared by all columns in this table
 
 ***
 
-### \features
+### \_features
 
 ```ts
-readonly features: Partial<CoreFeatures> & TFeatures;
+readonly _features: Partial<CoreFeatures> & TFeatures;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:150](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L150)
@@ -67,7 +67,7 @@ The features that are enabled for the table.
 
 #### Inherited from
 
-[`Table_CoreProperties`](Table_CoreProperties.md).[`features`](Table_CoreProperties.md#features)
+[`Table_CoreProperties`](Table_CoreProperties.md).[`_features`](Table_CoreProperties.md#_features)
 
 ***
 
@@ -119,10 +119,10 @@ The row model processing functions that are used to process the data by features
 
 ***
 
-### \rowModels
+### \_rowModels
 
 ```ts
-readonly rowModels: CachedRowModels<TFeatures, TData>;
+readonly _rowModels: CachedRowModels<TFeatures, TData>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:162](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L162)
@@ -131,7 +131,7 @@ The row models that are enabled for the table.
 
 #### Inherited from
 
-[`Table_CoreProperties`](Table_CoreProperties.md).[`rowModels`](Table_CoreProperties.md#_rowmodels)
+[`Table_CoreProperties`](Table_CoreProperties.md).[`_rowModels`](Table_CoreProperties.md#_rowmodels)
 
 ***
 
@@ -189,7 +189,7 @@ single write surface — all state mutations from features land here.
 ### initialState
 
 ```ts
-readonly initialState: TableState<TFeatures>;
+readonly initialState: ExtractFeatureMapTypes<TFeatures>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:181](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L181)
@@ -282,7 +282,7 @@ resolved options and then merging them through `options.mergeOptions`.
 ### store
 
 ```ts
-readonly store: ReadonlyStore<TableState<TFeatures>>;
+readonly store: ReadonlyStore<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:196](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L196)

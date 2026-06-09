@@ -9,7 +9,7 @@ title: LegacyReactTable
 type LegacyReactTable<TData> = ReactTable<StockFeatures, TData, TableState<StockFeatures>> & object;
 ```
 
-Defined in: [useLegacyTable.ts:275](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L275)
+Defined in: [useLegacyTable.ts:276](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L276)
 
 Legacy table instance type that includes the v8-style `getState()` method.
 

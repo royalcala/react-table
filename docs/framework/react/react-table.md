@@ -150,7 +150,7 @@ function App({ data }: { data: Person[] }) {
 }
 ```
 
-See the [createTableHook Guide](./guide/create-table-hook.md) and the [Composable Tables example](./examples/composable-tables) for the full pattern.
+See the [Composable Tables Guide](./guide/composable-tables.md) and the [Composable Tables example](./examples/composable-tables) for the full pattern.
 
 ## API Reference
 

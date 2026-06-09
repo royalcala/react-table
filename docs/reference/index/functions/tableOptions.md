@@ -13,7 +13,7 @@ overloads preserving table option inference at compile time.
 ## Call Signature
 
 ```ts
-function tableOptions<TFeatures, TData>(options): Omit<TableOptions<TFeatures, TData>, "features" | "columns"> & object;
+function tableOptions<TFeatures, TData>(options): Omit<TableOptions<TFeatures, TData>, "columns" | "features"> & object;
 ```
 
 Defined in: [helpers/tableOptions.ts:11](https://github.com/TanStack/table/blob/main/packages/table-core/src/helpers/tableOptions.ts#L11)
@@ -41,7 +41,7 @@ from a framework adapter or table factory.
 
 ### Returns
 
-`Omit`\<[`TableOptions`](../type-aliases/TableOptions.md)\<`TFeatures`, `TData`\>, `"features"` \| `"columns"`\> & `object`
+`Omit`\<[`TableOptions`](../type-aliases/TableOptions.md)\<`TFeatures`, `TData`\>, `"columns"` \| `"features"`\> & `object`
 
 ## Call Signature
 
@@ -76,7 +76,7 @@ Preserves table option inference when reusable options omit `data`.
 ## Call Signature
 
 ```ts
-function tableOptions<TFeatures, TData>(options): Omit<TableOptions<TFeatures, TData>, "features" | "data" | "columns"> & object;
+function tableOptions<TFeatures, TData>(options): Omit<TableOptions<TFeatures, TData>, "columns" | "features" | "data"> & object;
 ```
 
 Defined in: [helpers/tableOptions.ts:40](https://github.com/TanStack/table/blob/main/packages/table-core/src/helpers/tableOptions.ts#L40)
@@ -98,11 +98,11 @@ Preserves table option inference when reusable options omit both `data` and
 
 #### options
 
-`Omit`\<[`TableOptions`](../type-aliases/TableOptions.md)\<`TFeatures`, `TData`\>, `"data"` \| `"columns"`\> & `object`
+`Omit`\<[`TableOptions`](../type-aliases/TableOptions.md)\<`TFeatures`, `TData`\>, `"columns"` \| `"data"`\> & `object`
 
 ### Returns
 
-`Omit`\<[`TableOptions`](../type-aliases/TableOptions.md)\<`TFeatures`, `TData`\>, `"features"` \| `"data"` \| `"columns"`\> & `object`
+`Omit`\<[`TableOptions`](../type-aliases/TableOptions.md)\<`TFeatures`, `TData`\>, `"columns"` \| `"features"` \| `"data"`\> & `object`
 
 ## Call Signature
 

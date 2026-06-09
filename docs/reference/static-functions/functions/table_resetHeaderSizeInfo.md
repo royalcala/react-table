@@ -9,7 +9,7 @@ title: table_resetHeaderSizeInfo
 function table_resetHeaderSizeInfo<TFeatures, TData>(table, defaultState?): void;
 ```
 
-Defined in: [features/column-resizing/columnResizingFeature.utils.ts:303](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L303)
+Defined in: [features/column-resizing/columnResizingFeature.utils.ts:302](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L302)
 
 Resets `columnResizing` to the configured initial state or feature default.
 

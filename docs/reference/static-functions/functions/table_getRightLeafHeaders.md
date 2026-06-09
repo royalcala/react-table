@@ -6,7 +6,7 @@ title: table_getRightLeafHeaders
 # Function: table\_getRightLeafHeaders()
 
 ```ts
-function table_getRightLeafHeaders<TFeatures, TData>(table): any[];
+function table_getRightLeafHeaders<TFeatures, TData>(table): Header<TFeatures, TData, unknown>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:650](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L650)
@@ -33,7 +33,7 @@ Parent headers are filtered out from the right flat header list.
 
 ## Returns
 
-`any`[]
+[`Header`](../../index/type-aliases/Header.md)\<`TFeatures`, `TData`, `unknown`\>[]
 
 ## Example
 

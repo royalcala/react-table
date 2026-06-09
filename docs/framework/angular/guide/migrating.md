@@ -614,7 +614,7 @@ const { injectAppTable } = createTableHook(sharedOptions)
 
 For applications with multiple tables sharing the same configuration, `createTableHook` lets you define features, row models, and reusable components once.
 
-For full setup and patterns, see the [Table composition Guide](./table-composition.md).
+For full setup and patterns, see the [Composable Tables Guide](./composable-tables.md).
 
 ---
 

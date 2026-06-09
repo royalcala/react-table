@@ -9,7 +9,7 @@ title: getFilteredRowModel
 function getFilteredRowModel<TData>(): RowModelFactory<TData>;
 ```
 
-Defined in: [useLegacyTable.ts:53](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L53)
+Defined in: [useLegacyTable.ts:54](https://github.com/TanStack/table/blob/main/packages/react-table/src/useLegacyTable.ts#L54)
 
 ## Type Parameters
 

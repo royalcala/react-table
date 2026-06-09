@@ -127,10 +127,6 @@ export default function MyComponent() {
 }
 ```
 
-### React Forget
-
-When React Forget is released, these problems might be a thing of the past. Or just use Solid.js... 🤓
-
 ## How do I stop my table state from automatically resetting when my data changes?
 
 Most plugins use state that _should_ normally reset when the data sources changes, but sometimes you need to suppress that from happening if you are filtering your data externally, or immutably editing your data while looking at it, or simply doing anything external with your data that you don't want to trigger a piece of table state to reset automatically.

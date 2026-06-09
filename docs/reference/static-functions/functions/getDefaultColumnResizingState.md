@@ -9,7 +9,7 @@ title: getDefaultColumnResizingState
 function getDefaultColumnResizingState(): columnResizingState;
 ```
 
-Defined in: [features/column-resizing/columnResizingFeature.utils.ts:27](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L27)
+Defined in: [features/column-resizing/columnResizingFeature.utils.ts:26](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L26)
 
 Creates the default transient column resizing state.
 

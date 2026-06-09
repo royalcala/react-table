@@ -9,7 +9,7 @@ title: createTableHook
 function createTableHook<TFeatures, TTableComponents, TCellComponents, THeaderComponents>(__namedParameters): object;
 ```
 
-Defined in: [packages/vue-table/src/createTableHook.ts:300](https://github.com/TanStack/table/blob/main/packages/vue-table/src/createTableHook.ts#L300)
+Defined in: [packages/vue-table/src/createTableHook.ts:291](https://github.com/TanStack/table/blob/main/packages/vue-table/src/createTableHook.ts#L291)
 
 Creates app-scoped Vue table helpers with features, row models, and
 renderable component maps pre-bound.
@@ -70,7 +70,7 @@ createAppColumnHelper: <TData>() => AppColumnHelper<TFeatures, TData, TCellCompo
 ### useAppTable()
 
 ```ts
-useAppTable: <TData, TSelected>(tableOptions, selector?) => AppVueTable<TFeatures, TData, TSelected, TTableComponents, TCellComponents, THeaderComponents>;
+useAppTable: <TData>(tableOptions) => AppVueTable<TFeatures, TData, TableState<TFeatures>, TTableComponents, TCellComponents, THeaderComponents>;
 ```
 
 #### Type Parameters
@@ -79,23 +79,15 @@ useAppTable: <TData, TSelected>(tableOptions, selector?) => AppVueTable<TFeature
 
 `TData` *extends* `RowData`
 
-##### TSelected
-
-`TSelected` = `TableState`\<`TFeatures`\>
-
 #### Parameters
 
 ##### tableOptions
 
 `Omit`\<[`TableOptionsWithReactiveData`](../type-aliases/TableOptionsWithReactiveData.md)\<`TFeatures`, `TData`\>, `"features"` \| `"rowModels"`\>
 
-##### selector?
-
-(`state`) => `TSelected`
-
 #### Returns
 
-[`AppVueTable`](../type-aliases/AppVueTable.md)\<`TFeatures`, `TData`, `TSelected`, `TTableComponents`, `TCellComponents`, `THeaderComponents`\>
+[`AppVueTable`](../type-aliases/AppVueTable.md)\<`TFeatures`, `TData`, `TableState`\<`TFeatures`\>, `TTableComponents`, `TCellComponents`, `THeaderComponents`\>
 
 ### useCellContext()
 

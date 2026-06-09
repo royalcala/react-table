@@ -6,7 +6,7 @@ title: table_getRightTotalSize
 # Function: table\_getRightTotalSize()
 
 ```ts
-function table_getRightTotalSize<TFeatures, TData>(table): any;
+function table_getRightTotalSize<TFeatures, TData>(table): number;
 ```
 
 Defined in: [features/column-sizing/columnSizingFeature.utils.ts:368](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-sizing/columnSizingFeature.utils.ts#L368)
@@ -33,7 +33,7 @@ An empty right pinning region returns `0`.
 
 ## Returns
 
-`any`
+`number`
 
 ## Example
 

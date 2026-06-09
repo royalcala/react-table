@@ -9,7 +9,7 @@ title: column_getCanResize
 function column_getCanResize<TFeatures, TData, TValue>(column): boolean;
 ```
 
-Defined in: [features/column-resizing/columnResizingFeature.utils.ts:49](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L49)
+Defined in: [features/column-resizing/columnResizingFeature.utils.ts:48](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-resizing/columnResizingFeature.utils.ts#L48)
 
 Checks whether this column can start a resize interaction.
 

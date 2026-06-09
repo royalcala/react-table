@@ -22,7 +22,7 @@ Defined in: [features/column-filtering/columnFilteringFeature.types.ts:38](https
 ### filterFns
 
 ```ts
-filterFns: Record<keyof FilterFns, FilterFn<TFeatures, TData>>;
+filterFns: Record<keyof FilterFns, FilterFn<TFeatures, RowData>>;
 ```
 
 Defined in: [features/column-filtering/columnFilteringFeature.types.ts:42](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-filtering/columnFilteringFeature.types.ts#L42)

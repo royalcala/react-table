@@ -6,7 +6,7 @@ title: table_getCenterLeafHeaders
 # Function: table\_getCenterLeafHeaders()
 
 ```ts
-function table_getCenterLeafHeaders<TFeatures, TData>(table): any[];
+function table_getCenterLeafHeaders<TFeatures, TData>(table): Header<TFeatures, TData, unknown>[];
 ```
 
 Defined in: [features/column-pinning/columnPinningFeature.utils.ts:671](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-pinning/columnPinningFeature.utils.ts#L671)
@@ -33,7 +33,7 @@ Parent headers are filtered out from the center flat header list.
 
 ## Returns
 
-`any`[]
+[`Header`](../../index/type-aliases/Header.md)\<`TFeatures`, `TData`, `unknown`\>[]
 
 ## Example
 

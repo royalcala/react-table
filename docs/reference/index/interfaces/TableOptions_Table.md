@@ -23,38 +23,10 @@ Defined in: [core/table/coreTablesFeature.types.ts:64](https://github.com/TanSta
 
 ## Properties
 
-### \features
-
-```ts
-readonly features: TFeatures;
-```
-
-Defined in: [core/table/coreTablesFeature.types.ts:74](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L74)
-
-The feature modules registered on this table instance.
-
-Feature registration controls which state slices, options, and prototype
-APIs are available.
-
-***
-
-### \rowModels?
-
-```ts
-readonly optional rowModels: CreateRowModels_All<TFeatures, TData>;
-```
-
-Defined in: [core/table/coreTablesFeature.types.ts:79](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L79)
-
-Row model factories used by features such as filtering, grouping, sorting,
-expansion, and pagination.
-
-***
-
 ### atoms?
 
 ```ts
-readonly optional atoms: Partial<{ [K in string | number | symbol]: Atom<TableState<TFeatures>[K]> }>;
+readonly optional atoms: Partial<{ [K in string | number | symbol]: Atom<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>[K]> }>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:87](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L87)
@@ -91,10 +63,25 @@ The data for the table to display. When the `data` option changes reference, the
 
 ***
 
+### features
+
+```ts
+readonly features: TFeatures;
+```
+
+Defined in: [core/table/coreTablesFeature.types.ts:74](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L74)
+
+The feature modules registered on this table instance.
+
+Feature registration controls which state slices, options, and prototype
+APIs are available.
+
+***
+
 ### initialState?
 
 ```ts
-readonly optional initialState: Partial<TableState<TFeatures>>;
+readonly optional initialState: Partial<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:109](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L109)
@@ -159,10 +146,23 @@ You can pass any object to `options.meta` and access it anywhere the `table` is 
 
 ***
 
+### rowModels?
+
+```ts
+readonly optional rowModels: CreateRowModels_All<TFeatures, TData>;
+```
+
+Defined in: [core/table/coreTablesFeature.types.ts:79](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L79)
+
+Row model factories used by features such as filtering, grouping, sorting,
+expansion, and pagination.
+
+***
+
 ### state?
 
 ```ts
-readonly optional state: Partial<TableState<TFeatures>>;
+readonly optional state: Partial<ExtractFeatureMapTypes<TFeatures, TableState_FeatureMap>>;
 ```
 
 Defined in: [core/table/coreTablesFeature.types.ts:128](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/table/coreTablesFeature.types.ts#L128)

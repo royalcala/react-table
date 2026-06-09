@@ -6,7 +6,7 @@ title: TanStackTableCellToken
 # Variable: TanStackTableCellToken
 
 ```ts
-const TanStackTableCellToken: InjectionToken<Signal<any>>;
+const TanStackTableCellToken: InjectionToken<Signal<Cell<TableFeatures, RowData, unknown>>>;
 ```
 
 Defined in: [packages/angular-table/src/helpers/cell.ts:25](https://github.com/TanStack/table/blob/main/packages/angular-table/src/helpers/cell.ts#L25)
