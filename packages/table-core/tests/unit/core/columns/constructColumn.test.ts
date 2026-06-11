@@ -7,7 +7,7 @@ import type { ColumnDef } from '../../../../src/types/ColumnDef'
 
 const features = {
   coreColumnsFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 }
 
 interface TestRow {

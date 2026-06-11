@@ -7,6 +7,7 @@ title: Column Sizing (Angular) Guide
 Want to skip to the implementation? Check out these Angular examples:
 
 - [Column Sizing](../examples/column-sizing)
+
 ### Angular Setup
 
 ```ts
@@ -48,6 +49,8 @@ export const defaultColumnSizing = {
 These defaults can be overridden by both `tableOptions.defaultColumn` and individual column defs, in that order.
 
 ```ts
+const features = tableFeatures({ columnSizingFeature })
+
 const columns = [
   {
     accessorKey: 'col1',
@@ -57,7 +60,7 @@ const columns = [
 ]
 
 readonly table = injectTable(() => ({
-  features: tableFeatures({ columnSizingFeature }),
+  features,
   rowModels: {},
   defaultColumn: {
     size: 200, // starting column size
@@ -65,7 +68,7 @@ readonly table = injectTable(() => ({
     maxSize: 500, // enforced during column resizing
   },
   //...
-})
+}))
 ```
 
 The column "sizes" are stored in the table state as numbers, and are usually interpreted as pixel unit values, but you can hook up these column sizing values to your css styles however you see fit.
@@ -122,4 +125,53 @@ table.setColumnSizing({
 
 table.resetColumnSizing()
 table.resetColumnSizing(true)
+```
+
+### Managing Column Sizing State
+
+If you need to own the `columnSizing` state yourself (for example, to persist user-set column widths), the recommended v9 approach is an external atom (created with `createAtom` from `@tanstack/angular-store`) passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the sizing state without re-running the `injectTable` options initializer on every change.
+
+```ts
+import { createAtom } from '@tanstack/angular-store'
+import type { ColumnSizingState } from '@tanstack/angular-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+export class App {
+  readonly columnSizingAtom = createAtom<ColumnSizingState>({})
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {},
+    columns,
+    data: this.data(),
+    atoms: {
+      columnSizing: this.columnSizingAtom,
+    },
+  }))
+
+  // read this.columnSizingAtom.get() wherever you need the value
+}
+```
+
+Alternatively, the v8-style `state.columnSizing` plus `onColumnSizingChange` pattern is still supported. In Angular this means owning the slice with an Angular signal. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const features = tableFeatures({ columnSizingFeature })
+
+readonly columnSizing = signal<ColumnSizingState>({})
+
+readonly table = injectTable(() => ({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data(),
+  state: {
+    columnSizing: this.columnSizing(),
+  },
+  onColumnSizingChange: (updater) =>
+    typeof updater === 'function'
+      ? this.columnSizing.update(updater)
+      : this.columnSizing.set(updater),
+}))
 ```

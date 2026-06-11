@@ -6,11 +6,11 @@ title: Table Instance Guide
 
 TanStack Table is a headless UI library. When we talk about the `table` or "table instance", we're not talking about a literal `<table>` element. Instead, we're referring to the core table object that coordinates table state and APIs. The `table` instance is created by calling your adapter's table creation function (e.g. `useTable`, `createTable`, `injectTable`, or `constructTable`).
 
-The `table` instance that is returned from the `_createTable` function (from the framework adapter) is the main object that you will interact with to read and mutate the table state. It is the one place where everything happens in TanStack Table. When you get to the point where you are rendering your UI, you will use APIs from this `table` instance.
+The `table` instance returned from one of these functions is the main object that you will interact with to read and mutate the table state. It is the one place where everything happens in TanStack Table. When you get to the point where you are rendering your UI, you will use APIs from this `table` instance.
 
 ### Creating a Table Instance
 
-To create a table instance, 3 `options` are required: `columns`, `data`, and `features`. The `features` option declares which table features your table uses (enabling tree-shaking—you only bundle what you use). The core row model is included automatically; add additional row models via `rowModels` when you need filtering, sorting, pagination, etc. There are dozens of other table options to configure features and behavior.
+To create a table instance, 3 `options` are required: `columns`, `data`, and `features`. The `features` option declares which table features your table uses (enabling tree-shaking, so you only bundle what you use). The core row model is included automatically; add additional row models via `rowModels` when you need filtering, sorting, pagination, etc. There are dozens of other table options to configure features and behavior.
 
 #### Defining Data
 
@@ -33,12 +33,16 @@ The column definitions are where we will tell TanStack Table how each column sho
 
 This is explained in much more detail in the [Row Models Guide](./row-models). In v9, you declare which features your table uses via `features` (using `tableFeatures()`), and which row models to apply via `rowModels`. The core row model is always included automatically. For a basic table with no filtering, sorting, or pagination, pass an empty features object and empty row models:
 
+<!-- ::start:framework -->
+
+# React
+
 ```ts
-import { tableFeatures } from '@tanstack/[framework]-table'
+import { tableFeatures, useTable } from '@tanstack/react-table'
 
 const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
 
-const table = _createTable({
+const table = useTable({
   features,
   rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
   columns,
@@ -46,34 +50,202 @@ const table = _createTable({
 })
 ```
 
-#### Initializing the Table Instance
-
-With our `features`, `columns`, `data`, and `rowModels` defined, we can now create our basic table instance, along side any other table options that we want to pass in.
-
-> **Framework note:** This guide uses React examples. Other frameworks (Angular, Lit, Solid, Svelte, Vue) use `createTable`, `injectTable`, or similar with the same options.
+# Preact
 
 ```ts
-//vanilla js
-const table = _createTable({ features, rowModels: {}, columns, data })
+import { tableFeatures, useTable } from '@tanstack/preact-table'
 
-//angular
-this.table = injectTable({ features, rowModels: {}, columns: this.columns, data: this.data() })
+const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
 
-//lit
-const table = this.tableController.table({ features, rowModels: {}, columns, data })
+const table = useTable({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  data,
+})
+```
 
-//react
-const table = useTable({ features, rowModels: {}, columns, data })
+# Vue
 
-//solid
-const table = createTable({ features, rowModels: {}, columns, get data() { return data() } })
+```ts
+import { tableFeatures, useTable } from '@tanstack/vue-table'
 
-//svelte
-const table = createTable({ features, rowModels: {}, columns, data })
+const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
 
-//vue
+const table = useTable({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  data,
+})
+```
+
+# Solid
+
+```ts
+import { tableFeatures, createTable } from '@tanstack/solid-table'
+
+const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
+
+const table = createTable({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  get data() {
+    return data()
+  },
+})
+```
+
+# Svelte
+
+```ts
+import { tableFeatures, createTable } from '@tanstack/svelte-table'
+
+const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
+
+const table = createTable({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  get data() {
+    return data
+  },
+})
+```
+
+# Angular
+
+```ts
+import { injectTable, tableFeatures } from '@tanstack/angular-table'
+
+const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
+
+readonly table = injectTable(() => ({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  data: this.data(),
+}))
+```
+
+# Lit
+
+```ts
+import { TableController, tableFeatures } from '@tanstack/lit-table'
+
+const features = tableFeatures({}) // Core features only; add columnFilteringFeature, rowSortingFeature, etc. as needed
+
+// inside your LitElement render():
+const table = this.tableController.table({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  data: this.data,
+})
+```
+
+# Vanilla
+
+```ts
+import { constructTable, tableFeatures } from '@tanstack/table-core'
+import { storeReactivityBindings } from '@tanstack/table-core/store-reactivity-bindings'
+
+const features = tableFeatures({
+  coreReactivityFeature: storeReactivityBindings(),
+})
+
+const table = constructTable({
+  features,
+  rowModels: {}, // Core row model is automatic; add filteredRowModel, sortedRowModel, etc. as needed
+  columns,
+  data,
+})
+```
+
+<!-- ::end:framework -->
+
+#### Initializing the Table Instance
+
+With our `features`, `columns`, `data`, and `rowModels` defined, we can now create our basic table instance, alongside any other table options that we want to pass in.
+
+> **Framework note:** Each framework adapter has its own table creation function, but they all accept the same core options:
+
+<!-- ::start:framework -->
+
+# React
+
+```ts
 const table = useTable({ features, rowModels: {}, columns, data })
 ```
+
+# Preact
+
+```ts
+const table = useTable({ features, rowModels: {}, columns, data })
+```
+
+# Vue
+
+```ts
+const table = useTable({ features, rowModels: {}, columns, data })
+```
+
+# Solid
+
+```ts
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  get data() {
+    return data()
+  },
+})
+```
+
+# Svelte
+
+```ts
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  get data() {
+    return data
+  },
+})
+```
+
+# Angular
+
+```ts
+readonly table = injectTable(() => ({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data(),
+}))
+```
+
+# Lit
+
+```ts
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data,
+})
+```
+
+# Vanilla
+
+```ts
+const table = constructTable({ features, rowModels: {}, columns, data })
+```
+
+<!-- ::end:framework -->
 
 So what's in the `table` instance? Let's take a look at what interactions we can have with the table instance.
 
@@ -92,7 +264,43 @@ table.setRowSelection((old) => ({...old})) //set the row selection state
 table.resetRowSelection() //reset the row selection state
 ```
 
-Direct reads like `table.atoms.rowSelection.get()` and `table.store.state.rowSelection` are current values. Framework adapters add their own reactive state access APIs where needed. This is covered in more detail in the [Table State Guides](../framework/react/guide/table-state).
+Direct reads like `table.atoms.rowSelection.get()` and `table.store.state.rowSelection` are current values. Framework adapters add their own reactive state access APIs where needed. This is covered in more detail in the Table State Guide for your framework:
+
+<!-- ::start:framework -->
+
+# React
+
+[Table State Guide](../framework/react/guide/table-state)
+
+# Preact
+
+[Table State Guide](../framework/preact/guide/table-state)
+
+# Vue
+
+[Table State Guide](../framework/vue/guide/table-state)
+
+# Solid
+
+[Table State Guide](../framework/solid/guide/table-state)
+
+# Svelte
+
+[Table State Guide](../framework/svelte/guide/table-state)
+
+# Angular
+
+[Table State Guide](../framework/angular/guide/table-state)
+
+# Lit
+
+[Table State Guide](../framework/lit/guide/table-state)
+
+# Vanilla
+
+[Table State Guide](../framework/vanilla/guide/table-state)
+
+<!-- ::end:framework -->
 
 ### Table APIs
 

@@ -17,7 +17,7 @@ let data = makeData(1_000)
 
 const features = tableFeatures({
   rowSortingFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 })
 
 // Custom sorting logic for one of our enum columns

@@ -16,7 +16,7 @@ import type { ColumnDef, Row } from '../../../../src'
 const features = {
   ...coreFeatures,
   rowSelectionFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 }
 
 type personKeys = keyof Person

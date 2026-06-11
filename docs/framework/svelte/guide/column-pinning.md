@@ -9,6 +9,7 @@ Want to skip to the implementation? Check out these Svelte examples:
 - [Column Pinning](../examples/column-pinning)
 - [Column Pinning Split](../examples/column-pinning-split)
 - [Sticky Column Pinning](../examples/column-pinning-sticky)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
@@ -46,15 +47,38 @@ The only way to change the order of the pinned columns is in the `columnPinning.
 
 Managing the `columnPinning` state is optional, and usually not necessary unless you are adding persistent state features. TanStack Table will already keep track of the column pinning state for you. Manage the `columnPinning` state just like any other table state if you need to.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without coupling that code to the table instance.
+
 ```ts
-import {
-  createTable,
-  createTableState,
-  tableFeatures,
-  columnPinningFeature,
-} from '@tanstack/svelte-table'
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+import { createTable, tableFeatures, columnPinningFeature } from '@tanstack/svelte-table'
+import type { ColumnPinningState } from '@tanstack/svelte-table'
 
 const features = tableFeatures({ columnPinningFeature })
+
+const columnPinningAtom = createAtom<ColumnPinningState>({
+  left: [],
+  right: [],
+})
+
+const columnPinning = useSelector(columnPinningAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnPinning: columnPinningAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnPinning` plus `onColumnPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+import { createTableState } from '@tanstack/svelte-table'
+import type { ColumnPinningState } from '@tanstack/svelte-table'
 
 const [columnPinning, setColumnPinning] =
   createTableState<ColumnPinningState>({

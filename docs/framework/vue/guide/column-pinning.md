@@ -9,6 +9,7 @@ Want to skip to the implementation? Check out these Vue examples:
 - [Column Pinning](../examples/column-pinning)
 - [Column Pinning Split](../examples/column-pinning-split)
 - [Sticky Column Pinning](../examples/column-pinning-sticky)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -44,11 +45,36 @@ The only way to change the order of the pinned columns is in the `columnPinning.
 
 Managing the `columnPinning` state is optional, and usually not necessary unless you are adding persistent state features. TanStack Table will already keep track of the column pinning state for you. Manage the `columnPinning` state just like any other table state if you need to.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without depending on the table instance.
+
 ```ts
+import { createAtom, useSelector } from '@tanstack/vue-store'
 import { useTable, tableFeatures, columnPinningFeature } from '@tanstack/vue-table'
+import type { ColumnPinningState } from '@tanstack/vue-table'
 
 const features = tableFeatures({ columnPinningFeature })
 
+const columnPinningAtom = createAtom<ColumnPinningState>({
+  left: [],
+  right: [],
+})
+
+const columnPinning = useSelector(columnPinningAtom) // subscribe wherever it is needed (a Vue ref)
+
+const table = useTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnPinning: columnPinningAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnPinning` plus `onColumnPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 const columnPinning = ref<ColumnPinningState>({
   left: [],
   right: [],
@@ -60,9 +86,7 @@ const table = useTable({
   //...
   state: {
     get columnPinning() {
-
       return columnPinning.value
-
     },
     //...
   },

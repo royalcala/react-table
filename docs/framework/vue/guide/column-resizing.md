@@ -8,6 +8,7 @@ Want to skip to the implementation? Check out these Vue examples:
 
 - [Column Resizing](../examples/column-resizing)
 - [Performant Column Resizing](../examples/column-resizing-performant)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -69,7 +70,7 @@ const table = useTable({
 
 By default, the column resize mode is set to `"onEnd"`. This means that the `column.getSize()` API will not return the new column size until the user has finished resizing (dragging) the column. Usually a small UI indicator will be displayed while the user is resizing the column.
 
-In the React TanStack Table adapter, where achieving 60 fps column resizing renders can be difficult depending on the complexity of your table or web page, the `"onEnd"` column resize mode can be a good default option to avoid stuttering or lagging while the user resizes columns. That is not to say that you cannot achieve 60 fps column resizing renders while using TanStack React Table, but you may have to do some extra memoization or other performance optimizations in order to achieve this.
+Vue's reactivity tracks dependencies per component, so a drag that updates the `columnResizing` state on every mouse move re-renders every component whose template reads column sizes. For large or complex tables, the `"onEnd"` column resize mode can be a good default option to avoid stuttering or lagging while the user resizes columns. That is not to say that you cannot achieve 60 fps column resizing renders with the Vue adapter, but you may need to keep size reads scoped (computed values, `table.Subscribe`, or CSS variables) so each drag frame touches as little of the template as possible.
 
 > Advanced column resizing performance tips will be discussed [down below](#advanced-column-resizing-performance).
 
@@ -138,7 +139,7 @@ TanStack Table keeps track of a `columnResizing` state object that you can use t
   class="resize-indicator"
   :style="{
     transform: header.column.getIsResizing()
-      ? `translateX(${table.atoms.columnResizing.get().deltaOffset}px)`
+      ? `translateX(${table.atoms.columnResizing.get().deltaOffset ?? 0}px)`
       : '',
   }"
 />
@@ -157,7 +158,35 @@ type columnResizingState = {
 }
 ```
 
-Use `onColumnResizingChange` with `state.columnResizing` if you need to manage this state externally.
+You rarely need to manage this transient drag state yourself, but if you do, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can observe the resize state without depending on the table instance.
+
+```ts
+import { createAtom, useSelector } from '@tanstack/vue-store'
+import type { columnResizingState } from '@tanstack/vue-table'
+
+const columnResizingAtom = createAtom<columnResizingState>({
+  columnSizingStart: [],
+  deltaOffset: null,
+  deltaPercentage: null,
+  isResizingColumn: false,
+  startOffset: null,
+  startSize: null,
+})
+
+const columnResizing = useSelector(columnResizingAtom) // subscribe wherever it is needed (a Vue ref)
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    columnResizing: columnResizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnResizing` plus `onColumnResizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 const columnResizing = ref<columnResizingState>({
@@ -176,9 +205,7 @@ const table = useTable({
   data,
   state: {
     get columnResizing() {
-
       return columnResizing.value
-
     },
   },
   onColumnResizingChange: (updater) => {
@@ -197,7 +224,7 @@ column.getCanResize()
 column.getIsResizing()
 ```
 
-The table instance exposes APIs for the transient resize state. The current generated v9 API spelling is `table.setcolumnResizing` with a lowercase `c` in `column`; use that exact name.
+The table instance exposes APIs for the transient resize state. Note that the current v9 API spelling is `table.setcolumnResizing` with a lowercase `c` in `column`; use that exact name.
 
 ```ts
 table.setcolumnResizing(old => ({
@@ -211,14 +238,12 @@ table.resetHeaderSizeInfo(true)
 
 ### Advanced Column Resizing Performance
 
-If you are creating large or complex tables with Vue, you may find that if you do not add proper memoization to your render logic, your users may experience degraded performance while resizing columns.
+If you are creating large or complex tables with Vue, you may find that resizing columns with `columnResizeMode: 'onChange'` triggers a full template re-render on every drag frame, which can degrade performance.
 
-We have created a [performant column resizing example](../examples/column-resizing-performant) that demonstrates how to achieve 60 fps column resizing renders with a complex table that may otherwise have slow renders. It is recommended that you just look at that example to see how it is done, but these are the basic things to keep in mind:
+There is a [performant column resizing example](../examples/column-resizing-performant) you can reference, and these are the basic principles to keep in mind:
 
-1. Don't use `column.getSize()` on every header and every data cell. Instead, calculate all column widths once upfront, **memoized**!
-2. Memoize your Table Body while resizing is in progress.
-3. Use CSS variables to communicate column widths to your table cells.
+1. Don't read `column.getSize()` in every header and every data cell on every frame. Instead, calculate all column widths once in a `computed(...)` so Vue caches the result until the sizing state actually changes.
+2. Keep the table body out of the resize-reactive path while a drag is in progress, for example by rendering rows inside a child component that does not read the `columnResizing` state (Vue only re-renders components whose tracked dependencies changed).
+3. Use CSS variables to communicate column widths to your table cells, so a drag frame updates a few style declarations instead of re-rendering every cell.
 
 If you follow these steps, you should see significant performance improvements while resizing columns.
-
-If you are not using React, and are using the Svelte, Vue, or Solid adapters instead, you may not need to worry about this as much, but similar principles apply.

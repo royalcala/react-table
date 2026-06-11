@@ -102,7 +102,7 @@ const table = useTable({
 
 ### Why this works
 
-The Vue adapter calls `vueReactivity()` and installs it as `coreReativityFeature` automatically
+The Vue adapter calls `vueReactivity()` and installs it as `coreReactivityFeature` automatically
 (see `packages/vue-table/src/useTable.ts`):
 
 - Readonly atoms back onto `computed()` refs.

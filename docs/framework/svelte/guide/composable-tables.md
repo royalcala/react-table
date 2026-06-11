@@ -44,6 +44,12 @@ import FooterColumnId from '../components/FooterColumnId.svelte'
 import FooterSum from '../components/FooterSum.svelte'
 import SortIndicator from '../components/SortIndicator.svelte'
 
+const features = tableFeatures({
+  columnFilteringFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+})
+
 export const {
   createAppColumnHelper,
   createAppTable,
@@ -51,11 +57,7 @@ export const {
   useCellContext,
   useHeaderContext,
 } = createTableHook({
-  features: tableFeatures({
-    columnFilteringFeature,
-    rowPaginationFeature,
-    rowSortingFeature,
-  }),
+  features,
   rowModels: {
     sortedRowModel: createSortedRowModel(sortFns),
     filteredRowModel: createFilteredRowModel(filterFns),

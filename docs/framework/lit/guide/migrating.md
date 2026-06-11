@@ -168,7 +168,6 @@ Use it as a temporary migration shortcut. Explicit feature registration is the p
 | Column Resizing | `columnResizingFeature` |
 | Column Grouping | `columnGroupingFeature` |
 | Column Faceting | `columnFacetingFeature` |
-| Global Faceting | `globalFacetingFeature` |
 
 ---
 
@@ -334,7 +333,7 @@ ${table.Subscribe({
 
 ### Controlled State
 
-Use Lit `@state()` fields with per-slice callbacks.
+The preferred v9 pattern for owning state slices is [external atoms](#external-atoms), described below. The v8-style controlled-state pattern is still supported: use Lit `@state()` fields with per-slice callbacks.
 
 ```ts
 import { state } from 'lit/decorators.js'
@@ -615,7 +614,7 @@ type Person = {
 
 - [ ] Replace controller construction with `new TableController<typeof features, TData>(this)`.
 - [ ] Move table options from the controller constructor into `tableController.table(...)`.
-- [ ] Add `features: tableFeatures({ ... })`.
+- [ ] Define `features` using `tableFeatures()` (or use `stockFeatures`).
 - [ ] Move root `get*RowModel` options into `rowModels`.
 - [ ] Remove `getCoreRowModel`; the core row model is automatic.
 - [ ] Pass `sortFns`, `filterFns`, and `aggregationFns` to row model factories.

@@ -7,6 +7,7 @@ title: Row Pinning (Vue) Guide
 Want to skip to the implementation? Check out these Vue examples:
 
 - [Row Pinning](../examples/row-pinning)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -82,7 +83,31 @@ const table = useTable({
 })
 ```
 
-If you need to manage row pinning outside of the table instance, use `state.rowPinning` with `onRowPinningChange`.
+If you need to manage row pinning outside of the table instance, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without depending on the table instance.
+
+```ts
+import { createAtom, useSelector } from '@tanstack/vue-store'
+import type { RowPinningState } from '@tanstack/vue-table'
+
+const rowPinningAtom = createAtom<RowPinningState>({
+  top: [],
+  bottom: [],
+})
+
+const rowPinning = useSelector(rowPinningAtom) // subscribe wherever it is needed (a Vue ref)
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    rowPinning: rowPinningAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.rowPinning` plus `onRowPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 const rowPinning = ref<RowPinningState>({
@@ -97,9 +122,7 @@ const table = useTable({
   data,
   state: {
     get rowPinning() {
-
       return rowPinning.value
-
     },
   },
   onRowPinningChange: (updater) => {

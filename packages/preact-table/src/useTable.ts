@@ -122,7 +122,7 @@ export function useTable<
     const tableInstance = constructTable({
       ...tableOptions,
       features: {
-        coreReativityFeature: preactReactivity(),
+        coreReactivityFeature: preactReactivity(),
         ...tableOptions.features,
       },
     }) as unknown as PreactTable<TFeatures, TData, TSelected>

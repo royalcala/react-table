@@ -16,7 +16,7 @@ Vanilla examples use the core table package directly with store reactivity bindi
 import { constructTable, tableFeatures, rowSortingFeature, createSortedRowModel, sortFns } from '@tanstack/table-core'
 import { storeReactivityBindings } from '@tanstack/table-core/store-reactivity-bindings'
 
-const features = tableFeatures({ rowSortingFeature, coreReativityFeature: storeReactivityBindings() })
+const features = tableFeatures({ rowSortingFeature, coreReactivityFeature: storeReactivityBindings() })
 
 const table = constructTable({
   features,
@@ -122,10 +122,12 @@ Whether or not you should use client-side or server-side sorting depends entirel
 If you plan to just use your own server-side sorting in your back-end logic, you do not need to provide a sorted row model. But if you have provided a sorting row model, but you want to disable it, you can use the `manualSorting` table option.
 
 ```jsx
+const features = tableFeatures({ rowSortingFeature }) // feature needed for sorting state/APIs
+
 let sorting: SortingState = []
 //...
 const table = constructTable({
-  features: tableFeatures({ rowSortingFeature }), // feature needed for sorting state/APIs
+  features,
   rowModels: {}, // no sortedRowModel needed for manual sorting
   columns,
   data,

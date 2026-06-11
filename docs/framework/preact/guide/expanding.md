@@ -142,8 +142,9 @@ const table = useTable({
       {/* If the row is expanded, render the expanded UI as a separate row with a single cell that spans the width of the table */}
       {row.getIsExpanded() && (
         <tr>
-          <td colSpan={row.getAllCells().length}> // The number of columns you wish to span for the expanded data if it is not a row that shares the same columns as the parent row
-            // Your custom UI goes here
+          {/* span however many columns the expanded data needs if it does not share the parent row's columns */}
+          <td colSpan={row.getAllCells().length}>
+            {/* Your custom UI goes here */}
           </td>
         </tr>
       )}
@@ -155,7 +156,27 @@ const table = useTable({
 
 ### Expanded rows state
 
-If you need to control the expanded state of the rows in your table, you can do so by using the expanded state and the `onExpandedChange` option. This allows you to manage the expanded state according to your requirements.
+If you need access to the expanded state of the rows in other parts of your application, you can own the `expanded` state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the expanded value can be read anywhere in your app without forcing the component that owns the table to re-render.
+
+```ts
+import { useCreateAtom, useSelector } from '@tanstack/preact-store'
+
+const expandedAtom = useCreateAtom<ExpandedState>({})
+
+// subscribe to the atom wherever you need the value
+const expanded = useSelector(expandedAtom)
+
+const table = useTable({
+  features,
+  rowModels: { expandedRowModel: createExpandedRowModel() },
+  // other options...
+  atoms: {
+    expanded: expandedAtom, // expanding APIs now update expandedAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.expanded` plus `onExpandedChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 const [expanded, setExpanded] = useState<ExpandedState>({})
@@ -240,9 +261,11 @@ Use `table.setExpanded` to update the expanded state directly. `table.resetExpan
 By default, the filtering process starts from the parent rows and moves downwards. This means if a parent row is excluded by the filter, all its child rows will also be excluded. However, you can change this behavior by using the `filterFromLeafRows` option. When this option is enabled, the filtering process starts from the leaf (child) rows and moves upwards. This ensures that a parent row will be included in the filtered results as long as at least one of its child or grandchild rows meets the filter criteria. Additionally, you can control how deep into the child hierarchy the filter process goes by using the `maxLeafRowFilterDepth` option. This option allows you to specify the maximum depth of child rows that the filter should consider.
 
 ```ts
+const features = tableFeatures({ columnFilteringFeature, rowExpandingFeature })
+
 //...
 const table = useTable({
-  features: tableFeatures({ columnFilteringFeature, rowExpandingFeature }),
+  features,
   rowModels: {
     filteredRowModel: createFilteredRowModel(filterFns),
     expandedRowModel: createExpandedRowModel(),
@@ -269,19 +292,37 @@ const table = useTable({
 
 ### Pinning Expanded Rows
 
-Pinning expanded rows works the same way as pinning regular rows. You can pin expanded rows to the top or bottom of the table. Please refer to the [Pinning Guide](../../../guide/pinning.md) for more information on row pinning.
+Pinning expanded rows works the same way as pinning regular rows. You can pin expanded rows to the top or bottom of the table. Please refer to the [Row Pinning Guide](./row-pinning) for more information on row pinning.
 
 ### Sorting Expanded Rows
 
 By default, expanded rows are sorted along with the rest of the table.
+
+### Auto Reset Expanded State
+
+If you are also using the grouping feature, the `expanded` state is automatically reset whenever the grouped row model recomputes, such as when the `data` or the grouping state changes. This default is automatically disabled when `manualExpanding` is `true`, but it can be overridden by explicitly assigning a boolean value to the `autoResetExpanded` table option. There is also a global `autoResetAll` table option that disables (or enables) every auto-reset behavior at once.
+
+A common reason to set `autoResetExpanded: false` is editing data while viewing the table (for example, inline cell editing). Every edit updates `data`, which recomputes the row models and would otherwise collapse the user's expanded rows. If you also use the pagination feature, pair it with `autoResetPageIndex: false` so the current page is kept as well.
+
+```ts
+const table = useTable({
+  features,
+  rowModels: { expandedRowModel: createExpandedRowModel() },
+  // other options...
+  autoResetExpanded: false, // keep expanded state when data changes
+  // autoResetAll: false, // or turn off all auto resets at once
+})
+```
 
 ### Manual Expanding (server-side)
 
 If you are doing server-side expansion, you can enable manual row expansion by setting the manualExpanding option to true. This means that the `getExpandedRowModel` will not be used to expand rows and you would be expected to perform the expansion in your own data model.
 
 ```ts
+const features = tableFeatures({ rowExpandingFeature })
+
 const table = useTable({
-  features: tableFeatures({ rowExpandingFeature }),
+  features,
   rowModels: {}, // no expandedRowModel needed for manual expanding
   // other options...
   manualExpanding: true,

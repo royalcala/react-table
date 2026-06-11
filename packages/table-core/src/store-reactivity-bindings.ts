@@ -11,7 +11,7 @@ import type { TableReactivityBindings } from './core/reactivity/coreReactivityFe
  * import { storeReactivityBindings } from '@tanstack/table-core/store-reactivity-bindings'
  *
  * const table = constructTable({
- *   features: tableFeatures({ coreReativityFeature: storeReactivityBindings() }),
+ *   features: tableFeatures({ coreReactivityFeature: storeReactivityBindings() }),
  *   // ...
  * })
  * ```

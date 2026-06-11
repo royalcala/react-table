@@ -16,7 +16,7 @@ import type { Person } from '../fixtures/data/types'
 const features = {
   ...coreFeatures,
   rowPinningFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 } as any
 
 type personKeys = keyof Person

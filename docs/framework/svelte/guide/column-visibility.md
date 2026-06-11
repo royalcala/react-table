@@ -7,6 +7,7 @@ title: Column Visibility (Svelte) Guide
 Want to skip to the implementation? Check out these Svelte examples:
 
 - [Column Visibility](../examples/column-visibility)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
@@ -34,13 +35,40 @@ The column visibility feature allows table columns to be hidden or shown dynamic
 
 The `columnVisibility` state is a map of column IDs to boolean values. A column will be hidden if its ID is present in the map and the value is `false`. If the column ID is not present in the map, or the value is `true`, the column will be shown.
 
+If you need to own the `columnVisibility` state yourself (for example, to persist user preferences), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the visibility state without coupling that code to the table instance.
+
 ```ts
-import {
-  createTable,
-  createTableState,
-  tableFeatures,
-  columnVisibilityFeature,
-} from '@tanstack/svelte-table'
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+import { createTable, tableFeatures, columnVisibilityFeature } from '@tanstack/svelte-table'
+import type { ColumnVisibilityState } from '@tanstack/svelte-table'
+
+const features = tableFeatures({ columnVisibilityFeature })
+
+const columnVisibilityAtom = createAtom<ColumnVisibilityState>({
+  columnId1: true,
+  columnId2: false, // hide this column by default
+  columnId3: true,
+})
+
+const columnVisibility = useSelector(columnVisibilityAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnVisibility: columnVisibilityAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnVisibility` plus `onColumnVisibilityChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+import { createTableState } from '@tanstack/svelte-table'
+import type { ColumnVisibilityState } from '@tanstack/svelte-table'
+
+const features = tableFeatures({ columnVisibilityFeature })
 
 const [columnVisibility, setColumnVisibility] =
   createTableState<ColumnVisibilityState>({
@@ -50,7 +78,7 @@ const [columnVisibility, setColumnVisibility] =
 })
 
 const table = createTable({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   state: {
@@ -67,8 +95,10 @@ Alternatively, if you don't need to manage the column visibility state outside o
 > **Note**: If `columnVisibility` is provided to both `initialState` and `state`, the `state` initialization will take precedence and `initialState` will be ignored. Do not provide `columnVisibility` to both `initialState` and `state`, only one or the other.
 
 ```ts
+const features = tableFeatures({ columnVisibilityFeature })
+
 const table = createTable({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -95,7 +125,7 @@ const columns = [
   },
   {
     header: 'Name',
-    accessor: 'name', // can be hidden
+    accessorKey: 'name', // can be hidden
   },
 ];
 ```

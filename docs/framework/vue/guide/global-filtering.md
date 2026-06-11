@@ -7,7 +7,8 @@ title: Global Filtering (Vue) Guide
 Want to skip to the implementation? Check out these Vue examples:
 
 - [Column Filters](../examples/filters)
-- [Fuzzy Search](../examples/filters-fuzzy)
+- [Kitchen Sink](../examples/kitchen-sink) (includes fuzzy search)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -101,7 +102,7 @@ const table = useTable({
 
 ### Global Filter Function
 
-The globalFilterFn option allows you to specify the filter function that will be used for global filtering. The filter function can be a string that references a built-in filter function, a string that references a custom filter function provided via the tableOptions.filterFns option, or a custom filter function.
+The `globalFilterFn` option allows you to specify the filter function that will be used for global filtering. The filter function can be a string that references a built-in filter function, a string that references a custom filter function registered in the registry passed to `createFilteredRowModel`, or a custom filter function passed directly.
 
 ```ts
 const table = useTable({
@@ -111,31 +112,55 @@ const table = useTable({
   },
   data,
   columns,
-  globalFilterFn: 'text', // built-in filter function
+  globalFilterFn: 'includesString', // built-in filter function
 })
 ```
 
-By default there are 10 built-in filter functions to choose from:
+By default there are 12 built-in filter functions to choose from:
 
-- includesString - Case-insensitive string inclusion
-- includesStringSensitive - Case-sensitive string inclusion
-- equalsString - Case-insensitive string equality
-- equalsStringSensitive - Case-sensitive string equality
-- arrIncludes - Item inclusion within an array
-- arrIncludesAll - All items included in an array
-- arrIncludesSome - Some items included in an array
-- equals - Object/referential equality Object.is/===
-- weakEquals - Weak object/referential equality ==
-- inNumberRange - Number range inclusion
+- `includesString` - Case-insensitive string inclusion
+- `includesStringSensitive` - Case-sensitive string inclusion
+- `equalsString` - Case-insensitive string equality
+- `equals` - Strict equality `===`
+- `weakEquals` - Weak equality `==`
+- `arrIncludes` - The row's array (or string) value includes at least one of the filter values
+- `arrIncludesAll` - The row's array value includes every filter value
+- `arrIncludesSome` - The row's array value includes at least one of the filter values
+- `arrHas` - The row's scalar value equals at least one of the filter values
+- `inNumberRange` - Inclusive `[min, max]` number range (endpoints normalized and swapped if reversed)
+- `between` - Exclusive min/max range (blank endpoints are open-ended)
+- `betweenInclusive` - Inclusive min/max range (blank endpoints are open-ended)
 
-You can also define your own custom filter functions either as the globalFilterFn table option.
+You can also define your own custom global filter function and pass it directly to the `globalFilterFn` table option, as shown [below](#custom-global-filter-function).
 
 ### Global Filter State
 
-The global filter state is stored in the table's state atoms and can be read with `table.atoms.globalFilter.get()` or from the current `table.store.state.globalFilter` snapshot. If you want to persist the global filter state outside of the table, use the `state.globalFilter` and `onGlobalFilterChange` options together.
+The `globalFilter` state slice holds the current global filter value, usually a search string (the slice is typed as `any` so custom global filter functions can accept other value shapes). You can read it from the table instance with `table.atoms.globalFilter.get()`. Because the Vue adapter backs table atoms with Vue refs and computed values, this read is reactive when it happens inside a template, `computed(...)`, `watch(...)`, or `table.Subscribe`. Outside of a Vue reactive context, it is a plain snapshot of the current value.
+
+If you need access to the global filter state outside of the table, you can own the slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the filter value can be used elsewhere (such as in a query key for server-side filtering) without depending on the table instance.
 
 ```ts
-const globalFilter = ref<any>([])
+import { createAtom, useSelector } from '@tanstack/vue-store'
+
+const globalFilterAtom = createAtom<string>('')
+
+// subscribe to the atom wherever you need the value (e.g. for a query key)
+const globalFilter = useSelector(globalFilterAtom) // a Vue ref
+
+const table = useTable({
+  features,
+  rowModels: { filteredRowModel: createFilteredRowModel(filterFns) },
+  // other options...
+  atoms: {
+    globalFilter: globalFilterAtom, // table.setGlobalFilter now updates globalFilterAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.globalFilter` plus `onGlobalFilterChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const globalFilter = ref<string>('')
 
 const table = useTable({
   features,
@@ -143,9 +168,7 @@ const table = useTable({
   // other options...
   state: {
     get globalFilter() {
-
       return globalFilter.value
-
     },
   },
   onGlobalFilterChange: (updater) => {
@@ -154,17 +177,9 @@ const table = useTable({
 })
 ```
 
-The global filtering state is defined as an object with the following shape:
-
-```ts
-interface GlobalFilter {
-  globalFilter: any
-}
-```
-
 ### Adding global filter input to UI
 
-TanStack table will not add a global filter input UI to your table. You should manually add it to your UI to allow users to filter the table. For example, you can add an input UI above the table to allow users to enter a search term.
+TanStack table will not add a global filter input UI to your table. You should manually add it to your UI to allow users to filter the table. For example, you can add an input UI above the table to allow users to enter a search term. Read the value with `table.atoms.globalFilter.get()` (reactive inside the template) and update it with `table.setGlobalFilter`.
 
 ```vue
 <input
@@ -177,13 +192,13 @@ TanStack table will not add a global filter input UI to your table. You should m
 
 ### Custom Global Filter Function
 
-If you want to use a custom global filter function, you can define the function and pass it to the globalFilterFn option.
+If you want to use a custom global filter function, you can define the function and pass it to the `globalFilterFn` option.
 
-> **Note:** It is often a popular idea to use fuzzy filtering functions for global filtering. This is discussed in the [Fuzzy Filtering Guide](./fuzzy-filtering.md).
+> **Note:** It is often a popular idea to use fuzzy filtering functions for global filtering. This is discussed in the [Fuzzy Filtering Guide](./fuzzy-filtering).
 
 ```ts
-const customFilterFn = (rows, columnId, filterValue) => {
-  // custom filter logic
+const customFilterFn = (row, columnId, filterValue) => {
+  return // true if the row should be included in the filtered rows
 }
 
 const table = useTable({
@@ -196,31 +211,20 @@ const table = useTable({
 
 ### Initial Global Filter State
 
-If you want to set an initial global filter state when the table is initialized, you can pass the global filter state as part of the table initialState option.
-
-However, you can also just specify the initial global filter state in the state.globalFilter option.
+If you want to set an initial global filter state when the table is initialized, you can pass the global filter state as part of the table `initialState` option. However, if you are controlling the slice yourself, set the starting value on your external atom or ref instead.
 
 ```ts
-const globalFilter = ref("search term") //recommended to initialize globalFilter state here
-
 const table = useTable({
   features,
   rowModels: { filteredRowModel: createFilteredRowModel(filterFns) },
   // other options...
   initialState: {
-    globalFilter: 'search term', // if not managing globalFilter state, set initial state here
-  },
-  state: {
-    get globalFilter() {
-
-      return globalFilter.value
-
-    }, // pass our managed globalFilter state to the table
+    globalFilter: 'search term', // if not controlling globalFilter state, set initial state here
   },
 })
 ```
 
-> NOTE: Do not use both initialState.globalFilter and state.globalFilter at the same time, as the initialized state in the state.globalFilter will override the initialState.globalFilter.
+> NOTE: Do not use both `initialState.globalFilter` and a controlled `globalFilter` (via `atoms` or `state`) at the same time, as the controlled value will override `initialState.globalFilter`.
 
 ### Disable Global Filtering
 
@@ -246,3 +250,13 @@ const table = useTable({
   enableGlobalFilter: false, // disable global filtering for all columns
 })
 ```
+
+### Global Filter APIs
+
+There are several APIs that are useful for hooking up your global filter UI:
+
+- `table.setGlobalFilter` - Set the global filter value. Useful for connecting a search input's `@input` handler.
+- `table.resetGlobalFilter` - Reset the global filter value to its initial state, or clear it with `table.resetGlobalFilter(true)`.
+- `table.getGlobalFilterFn` - Returns the filter function currently used for global filtering.
+- `table.getGlobalAutoFilterFn` - Returns the default global filter function (currently `includesString`).
+- `column.getCanGlobalFilter` - Returns whether a column participates in global filtering. Useful for debugging which columns are searched.

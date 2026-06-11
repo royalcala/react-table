@@ -32,7 +32,7 @@ export function generateTestTableWithData<TFeatures extends TableFeatures>(
     features: {
       ...coreFeatures,
       ...options?.features,
-      coreReativityFeature: storeReactivityBindings(),
+      coreReactivityFeature: storeReactivityBindings(),
     },
   } as any) as unknown as Table_Internal<TFeatures, Person>
 }
@@ -49,7 +49,7 @@ export function generateTestTableFromData<TFeatures extends TableFeatures>(
     features: {
       ...coreFeatures,
       ...options?.features,
-      coreReativityFeature: storeReactivityBindings(),
+      coreReactivityFeature: storeReactivityBindings(),
     },
   } as any) as unknown as Table_Internal<TFeatures, Person>
 }

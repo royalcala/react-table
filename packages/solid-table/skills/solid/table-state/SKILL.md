@@ -391,7 +391,7 @@ tables. Use `createTableHook` when it does.
 ## How the Solid binding works (reference)
 
 `solidReactivity(owner)` is installed automatically by `createTable` as
-`coreReativityFeature`. Don't pass your own.
+`coreReactivityFeature`. Don't pass your own.
 
 - `createReadonlyAtom(fn)` → `createMemo(fn, { equals, name })`
 - `createWritableAtom(value)` → `createSignal(value, { equals, name })`

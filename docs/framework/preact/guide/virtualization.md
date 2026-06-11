@@ -4,7 +4,11 @@ title: Virtualization (Preact) Guide
 
 ## Examples
 
-This repository does not currently include official Preact virtualization examples. The table-side APIs in this guide use `@tanstack/preact-table`; pair them with the virtualization library that fits your Preact app.
+This repository does not currently include official Preact virtualization examples. The table-side APIs in this guide use `@tanstack/preact-table`. For the rendering side, the React virtualized examples translate almost directly to Preact:
+
+- [Virtualized Rows (React)](https://tanstack.com/table/latest/docs/framework/react/examples/virtualized-rows)
+- [Virtualized Columns (React)](https://tanstack.com/table/latest/docs/framework/react/examples/virtualized-columns)
+- [Virtualized Infinite Scrolling (React)](https://tanstack.com/table/latest/docs/framework/react/examples/virtualized-infinite-scrolling)
 
 Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table).
 
@@ -28,7 +32,44 @@ For small tables, normal rendering is simpler and usually preferable.
 
 ### Install A Virtualizer
 
-This repository does not currently include official Preact virtualization examples or a Preact-specific TanStack Virtual package in the table examples. Use a virtualizer that fits your Preact app, then map its virtual indexes back to `table.getRowModel().rows` or `table.getVisibleLeafColumns()`.
+There is no Preact-specific TanStack Virtual adapter. You have two good options:
+
+1. Use `@tanstack/react-virtual` in a Preact app that aliases `react` to `preact/compat` (the standard setup for using React libraries with Preact). The `useVirtualizer` hook works as-is, and the snippets in this guide assume this setup.
+2. Use `@tanstack/virtual-core` directly and wire its `Virtualizer` class to Preact yourself, or use any other virtualization library that fits your app.
+
+```sh
+npm install @tanstack/react-virtual
+```
+
+Either way, the job is the same: map the virtualizer's virtual indexes back to `table.getRowModel().rows` or `table.getVisibleLeafColumns()`.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with `useTable`; nothing about virtualization changes the table setup.
+
+```tsx
+import {
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+  useTable,
+} from '@tanstack/preact-table'
+import { useVirtualizer } from '@tanstack/react-virtual' // requires the preact/compat alias
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+const table = useTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  data,
+})
+```
 
 ### The Basic Pattern
 
@@ -46,7 +87,7 @@ Here is a compact row virtualization example:
 ```tsx
 const rows = table.getRowModel().rows
 
-const rowVirtualizer = your virtualizer({
+const rowVirtualizer = useVirtualizer({
   count: rows.length,
   getScrollElement: () => tableContainerRef.current,
   estimateSize: () => 33,
@@ -82,7 +123,7 @@ const rowVirtualizer = your virtualizer({
 
 ### Virtualized Rows
 
-The virtualized rows examples show how to render large row counts while keeping the DOM small. The examples are available for React, Solid, Svelte, Vue, Angular, and Lit.
+The virtualized rows examples show how to render large row counts while keeping the DOM small. The examples are available for React, Solid, Svelte, Vue, Angular, and Lit. There is no Preact port yet, but the React example translates almost directly to Preact.
 
 The core idea is that sorting, filtering, grouping, and other row-model work still comes from TanStack Table. The virtualizer reads from the final table row model:
 
@@ -109,7 +150,7 @@ const visibleColumns = table.getVisibleLeafColumns()
 The column virtualizer is configured for horizontal virtualization:
 
 ```tsx
-const columnVirtualizer = your virtualizer({
+const columnVirtualizer = useVirtualizer({
   count: visibleColumns.length,
   estimateSize: index => visibleColumns[index].getSize(),
   getScrollElement: () => tableContainerRef.current,
@@ -184,7 +225,7 @@ Then use `measureElement` to refine the actual row height after rendering:
 >
 ```
 
-Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In non-React adapters, call `measureElement` through the adapter-appropriate ref, action, directive, or controller.
+Set `data-index` on each row so the virtualizer can associate measurements with the correct item. Preact supports function refs on elements the same way React does, so this snippet works directly in Preact.
 
 Overscan helps avoid blank regions while measurements settle. If every row has a known fixed height, skip dynamic measurement and use the fixed height estimate instead.
 
@@ -222,4 +263,14 @@ Rows are absolutely positioned inside a relatively positioned `tbody`, and cells
 - Test production builds. Development builds can be slower than production builds; profile production bundles before optimizing.
 - Prefer fixed row sizes when the UI allows it.
 - For column virtualization, use `column.getSize()`, `header.getSize()`, and `cell.column.getSize()` consistently.
+
+### Common Pitfalls
+
+- Forgetting to give the scroll container a fixed height.
+- Rendering `table.getRowModel().rows.map(...)` instead of `virtualizer.getVirtualItems().map(...)`.
+- Using virtual indexes against stale rows or columns after sorting, filtering, pagination, grouping, or column visibility changes.
+- Forgetting left and right spacer cells for horizontal virtualization.
+- Using `measureElement` when every row has a fixed height.
+- Expecting TanStack Table to provide virtualization APIs as a feature.
+- Mixing client-side virtualization with server-side sorting or filtering inconsistently.
 

@@ -30,17 +30,46 @@ The column visibility feature allows table columns to be hidden or shown dynamic
 
 The `columnVisibility` state is a map of column IDs to boolean values. A column will be hidden if its ID is present in the map and the value is `false`. If the column ID is not present in the map, or the value is `true`, the column will be shown.
 
-```tsx
-import { useTable, tableFeatures, columnVisibilityFeature } from '@tanstack/react-table'
+If you need to own the `columnVisibility` state yourself (for example, to persist user preferences), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the visibility state without re-rendering the component that owns the table.
 
-const [columnVisibility, setColumnVisibility] = useState({
+```tsx
+import { useCreateAtom, useSelector } from '@tanstack/react-store'
+import { useTable, tableFeatures, columnVisibilityFeature } from '@tanstack/react-table'
+import type { ColumnVisibilityState } from '@tanstack/react-table'
+
+const features = tableFeatures({ columnVisibilityFeature })
+
+const columnVisibilityAtom = useCreateAtom<ColumnVisibilityState>({
+  columnId1: true,
+  columnId2: false, // hide this column by default
+  columnId3: true,
+})
+
+const columnVisibility = useSelector(columnVisibilityAtom) // subscribe wherever it is needed
+
+const table = useTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnVisibility: columnVisibilityAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnVisibility` plus `onColumnVisibilityChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
+const features = tableFeatures({ columnVisibilityFeature })
+
+const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({
   columnId1: true,
   columnId2: false, // hide this column by default
   columnId3: true,
 })
 
 const table = useTable({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   state: {
@@ -56,8 +85,10 @@ Alternatively, if you don't need to manage the column visibility state outside o
 > **Note**: If `columnVisibility` is provided to both `initialState` and `state`, the `state` initialization will take precedence and `initialState` will be ignored. Do not provide `columnVisibility` to both `initialState` and `state`, only one or the other.
 
 ```tsx
+const features = tableFeatures({ columnVisibilityFeature })
+
 const table = useTable({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -84,7 +115,7 @@ const columns = [
   },
   {
     header: 'Name',
-    accessor: 'name', // can be hidden
+    accessorKey: 'name', // can be hidden
   },
 ];
 ```

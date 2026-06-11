@@ -73,7 +73,7 @@ export function createTable<
   // 1. Merge reactivity into options using mergeObjects (preserves getters)
   const mergedOptions = mergeObjects(tableOptions, {
     features: {
-      coreReativityFeature: svelteReactivity(),
+      coreReactivityFeature: svelteReactivity(),
       ...tableOptions.features,
     },
   }) as TableOptions<TFeatures, TData>

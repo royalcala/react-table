@@ -12,9 +12,9 @@ In this guide, we'll cover how to extend TanStack Table with custom features, an
 
 TanStack Table has a core set of features that are built into the library such as sorting, filtering, pagination, etc. We've received a lot of requests and sometimes even some well thought out PRs to add even more features to the library. While we are always open to improving the library, we also want to make sure that TanStack Table remains a lean library that does not include too much bloat and code that is unlikely to be used in most use cases. Not every PR can, or should, be accepted into the core library, even if it does solve a real problem. This can be frustrating to developers where TanStack Table solves 90% of their use case, but they need a little bit more control. 
 
-TanStack Table has always been built in a way that allows it to be highly extensible (at least since v7). The `table` instance that is returned from whichever framework adapter that you are using (`createTable`, `createTable`, etc) is a plain JavaScript object that can have extra properties or APIs added to it. It has always been possible to use composition to add custom logic, state, and APIs to the table instance. Libraries like [Material React Table](https://github.com/KevinVandy/material-react-table/blob/v2/packages/material-react-table/src/hooks/useMRT_TableInstance.ts) have simply created custom wrapper hooks around the `createTable` hook to extend the table instance with custom functionality.
+TanStack Table has always been built in a way that allows it to be highly extensible (at least since v7). The `table` instance that is returned from whichever framework adapter that you are using (`createTable` for Solid, `useTable` for React, etc) is a plain JavaScript object that can have extra properties or APIs added to it. It has always been possible to use composition to add custom logic, state, and APIs to the table instance. Libraries like [Material React Table](https://github.com/KevinVandy/material-react-table/blob/v2/packages/material-react-table/src/hooks/useMRT_TableInstance.ts) have simply created custom wrappers around their adapter's table function to extend the table instance with custom functionality.
 
-In v9, TanStack Table uses the `features` option (via `tableFeatures()`) to declare which features your table uses. This enables tree-shaking—you only bundle the code for the features you need. You can add custom features to the table instance in exactly the same way as the built-in features.
+In v9, TanStack Table uses the `features` option (via `tableFeatures()`) to declare which features your table uses. This enables tree-shaking: you only bundle the code for the features you need. You can add custom features to the table instance in exactly the same way as the built-in features.
 
 > In v9, features are opt-in. Use `tableFeatures({ ... })` to declare which features your table uses, including custom features.
 
@@ -83,19 +83,19 @@ This might be a bit confusing, so let's break down what each of these methods do
 
 ##### getDefaultTableOptions
 
-The `getDefaultTableOptions` method in a table feature is responsible for setting the default table options for that feature. For example, in the [Column Sizing](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-sizing/columnSizingFeature.ts) feature, the `getDefaultTableOptions` method sets the default `columnResizeMode` option with a default value of `"onEnd"`.
+The `getDefaultTableOptions` method in a table feature is responsible for setting the default table options for that feature. For example, in the [Column Resizing](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/column-resizing/columnResizingFeature.ts) feature, the `getDefaultTableOptions` method sets the default `columnResizeMode` option with a default value of `"onEnd"`.
 
 <br />
 
 ##### getDefaultColumnDef
 
-The `getDefaultColumnDef` method in a table feature is responsible for setting the default column options for that feature. For example, in the [Sorting](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/row-sorting/rowSortingFeature.ts) feature, the `getDefaultColumnDef` method sets the default `sortUndefined` column option with a default value of `1`.
+The `getDefaultColumnDef` method in a table feature is responsible for setting the default column options for that feature. For example, in the [Sorting](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/row-sorting/rowSortingFeature.ts) feature, the `getDefaultColumnDef` method sets the default `sortUndefined` column option with a default value of `1`.
 
 <br />
 
 ##### getInitialState
 
-The `getInitialState` method in a table feature is responsible for setting the default state for that feature. For example, in the [Pagination](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/rowPaginationFeature.ts) feature, the `getInitialState` method sets the default `pageSize` state with a value of `10` and the default `pageIndex` state with a value of `0`.
+The `getInitialState` method in a table feature is responsible for setting the default state for that feature. For example, in the [Pagination](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/row-pagination/rowPaginationFeature.ts) feature, the `getInitialState` method sets the default `pageSize` state with a value of `10` and the default `pageIndex` state with a value of `0`.
 
 #### API Creators
 
@@ -103,37 +103,37 @@ The `getInitialState` method in a table feature is responsible for setting the d
 
 ##### constructTableAPIs
 
-The `constructTableAPIs` method in a table feature is responsible for adding methods to the `table` instance. For example, in the [Row Selection](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/row-selection/rowSelectionFeature.ts) feature, the `constructTableAPIs` method adds many table instance API methods such as `toggleAllRowsSelected`, `getIsAllRowsSelected`, `getIsSomeRowsSelected`, etc. So then, when you call `table.toggleAllRowsSelected()`, you are calling a method that was added to the table instance by the `rowSelectionFeature` feature.
+The `constructTableAPIs` method in a table feature is responsible for adding methods to the `table` instance. For example, in the [Row Selection](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/row-selection/rowSelectionFeature.ts) feature, the `constructTableAPIs` method adds many table instance API methods such as `toggleAllRowsSelected`, `getIsAllRowsSelected`, `getIsSomeRowsSelected`, etc. So then, when you call `table.toggleAllRowsSelected()`, you are calling a method that was added to the table instance by the `rowSelectionFeature` feature.
 
 <br />
 
 ##### assignHeaderPrototype
 
-The `assignHeaderPrototype` method in a table feature is responsible for adding methods to the shared `header` prototype. For example, the [Column Sizing](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-sizing/columnSizingFeature.ts) feature adds header instance API methods such as `getStart`. So then, when you call `header.getStart()`, you are calling a method that was added by the column sizing feature.
+The `assignHeaderPrototype` method in a table feature is responsible for adding methods to the shared `header` prototype. For example, the [Column Sizing](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/column-sizing/columnSizingFeature.ts) feature adds header instance API methods such as `getStart`. So then, when you call `header.getStart()`, you are calling a method that was added by the column sizing feature.
 
 <br />
 
 ##### assignColumnPrototype
 
-The `assignColumnPrototype` method in a table feature is responsible for adding methods to the shared `column` prototype. For example, the [Sorting](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/row-sorting/rowSortingFeature.ts) feature adds column instance API methods such as `getNextSortingOrder`, `toggleSorting`, etc. So then, when you call `column.toggleSorting()`, you are calling a method that was added by the row sorting feature.
+The `assignColumnPrototype` method in a table feature is responsible for adding methods to the shared `column` prototype. For example, the [Sorting](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/row-sorting/rowSortingFeature.ts) feature adds column instance API methods such as `getNextSortingOrder`, `toggleSorting`, etc. So then, when you call `column.toggleSorting()`, you are calling a method that was added by the row sorting feature.
 
 <br />
 
 ##### assignRowPrototype and initRowInstanceData
 
-The `assignRowPrototype` method in a table feature is responsible for adding methods to the shared `row` prototype. The `initRowInstanceData` method is available for per-row instance data or caches that cannot live on the shared prototype. For example, the [Row Selection](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/row-selection/rowSelectionFeature.ts) feature adds row instance API methods such as `toggleSelected` and `getIsSelected`.
+The `assignRowPrototype` method in a table feature is responsible for adding methods to the shared `row` prototype. The `initRowInstanceData` method is available for per-row instance data or caches that cannot live on the shared prototype. For example, the [Row Selection](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/row-selection/rowSelectionFeature.ts) feature adds row instance API methods such as `toggleSelected` and `getIsSelected`.
 
 <br />
 
 ##### assignCellPrototype
 
-The `assignCellPrototype` method in a table feature is responsible for adding methods to the shared `cell` prototype. For example, the [Column Grouping](https://github.com/TanStack/table/blob/main/packages/table-core/src/features/column-grouping/columnGroupingFeature.ts) feature adds cell instance API methods such as `getIsGrouped` and `getIsAggregated`.
+The `assignCellPrototype` method in a table feature is responsible for adding methods to the shared `cell` prototype. For example, the [Column Grouping](https://github.com/TanStack/table/blob/beta/packages/table-core/src/features/column-grouping/columnGroupingFeature.ts) feature adds cell instance API methods such as `getIsGrouped` and `getIsAggregated`.
 
 ### Adding a Custom Feature
 
 Let's walk through making a custom table feature for a hypothetical use case. Let's say we want to add a feature to the table instance that allows the user to change the "density" (padding of cells) of the table. 
 
-Check out the full custom-plugin example to see the full implementation, but here's an in-depth look at the steps to create a custom feature.
+There is no Solid custom-plugin example in the repository yet (the example currently exists for React, Preact, and Angular), but the feature object itself is framework-agnostic, so the steps below translate directly. Here's an in-depth look at the steps to create a custom feature.
 
 #### Step 1: Set up TypeScript Types
 
@@ -273,10 +273,12 @@ const table = createTable({
 
 #### Step 5: Use the Feature in Your Application
 
-Now that the feature is added to the table instance, you can use the new instance APIs options, and state in your application.
+Now that the feature is added to the table instance, you can use the new instance APIs, options, and state in your application. Here the `density` state is controlled with a Solid signal and the new `onDensityChange` option:
 
 ```tsx
 const features = tableFeatures({ densityPlugin })
+
+const [density, setDensity] = createSignal<DensityState>('md')
 
 const table = createTable({
   features,
@@ -285,21 +287,21 @@ const table = createTable({
   data,
   //...
   state: {
-    density,
+    get density() {
+      return density() // passing the density state to the table, TS is still happy :)
+    },
   },
   onDensityChange: setDensity,
 })
 //...
-const density = table.atoms.density.get()
 return(
   <td
-    key={cell.id}
     style={{
       //using our new feature in the code
       padding:
-        density === 'sm'
+        density() === 'sm'
           ? '4px'
-          : density === 'md'
+          : density() === 'md'
             ? '8px'
             : '16px',
       transition: 'padding 0.2s',

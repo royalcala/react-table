@@ -50,6 +50,12 @@ import {
   SortIndicator,
 } from '../components/header-components'
 
+const features = tableFeatures({
+  columnFilteringFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+})
+
 export const {
   createAppColumnHelper,
   useAppTable,
@@ -57,11 +63,7 @@ export const {
   useCellContext,
   useHeaderContext,
 } = createTableHook({
-  features: tableFeatures({
-    columnFilteringFeature,
-    rowPaginationFeature,
-    rowSortingFeature,
-  }),
+  features,
   rowModels: {
     sortedRowModel: createSortedRowModel(sortFns),
     filteredRowModel: createFilteredRowModel(filterFns),
@@ -149,7 +151,7 @@ const table = useAppTable(
 )
 ```
 
-The returned table includes `AppTable`, `AppHeader`, `AppCell`, and `AppFooter` wrappers. The Preact example uses the same pattern as the React example, but imports from `@tanstack/preact-table` and `preact/hooks`.
+The returned table includes `AppTable`, `AppHeader`, `AppCell`, and `AppFooter` wrappers. The example uses `AppTable` with a selector so rendering can subscribe to the state slices used by that table.
 
 ```tsx
 <table.AppTable

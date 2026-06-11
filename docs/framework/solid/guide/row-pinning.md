@@ -7,6 +7,7 @@ title: Row Pinning (Solid) Guide
 Want to skip to the implementation? Check out these Solid examples:
 
 - [Row Pinning](../examples/row-pinning)
+
 Use getters for reactive inputs such as `data` when passing Solid signals to `createTable`.
 
 ### Solid Setup
@@ -21,7 +22,7 @@ const table = createTable({
   rowModels: {},
   columns,
   get data() {
-    return data
+    return data()
   },
 })
 ```
@@ -84,7 +85,31 @@ const table = createTable({
 })
 ```
 
-If you need to manage row pinning outside of the table instance, use `state.rowPinning` with `onRowPinningChange`.
+If you need to manage row pinning outside of the table instance, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without going through the component that owns the table.
+
+```tsx
+import { createAtom, useSelector } from '@tanstack/solid-store'
+import type { RowPinningState } from '@tanstack/solid-table'
+
+const rowPinningAtom = createAtom<RowPinningState>({
+  top: [],
+  bottom: [],
+})
+
+const rowPinning = useSelector(rowPinningAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    rowPinning: rowPinningAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.rowPinning` plus `onRowPinningChange` pattern is still supported with Solid signals. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```tsx
 const [rowPinning, setRowPinning] = createSignal<RowPinningState>({
@@ -98,7 +123,9 @@ const table = createTable({
   columns,
   data,
   state: {
-    rowPinning,
+    get rowPinning() {
+      return rowPinning() // connect the signal back down to the table
+    },
   },
   onRowPinningChange: setRowPinning,
 })

@@ -35,7 +35,7 @@ A table instance has a few state surfaces:
 - `table.store` is a readonly flat TanStack Store derived by putting all of the registered `table.atoms` together.
 - `table.state` is Preact-only selected state. It is the value returned from the selector passed as the second argument to `useTable`.
 
-The Preact adapter mirrors the React adapter. It uses TanStack Store atoms for table state, `useSelector` for reactive Preact updates, and `table.Subscribe` for more targeted subscriptions.
+The important change from previous versions is that table state is now atomic. Preact can subscribe to all selected state, a selected subset of state, or a single atom such as `table.atoms.rowSelection`.
 
 ### Feature-based State
 
@@ -64,6 +64,8 @@ table.atoms.sorting.get()
 
 // table.atoms.rowSelection // TypeScript error unless rowSelectionFeature is registered
 ```
+
+The same feature-based typing applies to built-in features and custom feature-provided state.
 
 ### Accessing Table State
 
@@ -188,9 +190,13 @@ You can also subscribe directly to a single atom and select one value from it:
 </table.Subscribe>
 ```
 
+Advanced subscription patterns require understanding which table APIs depend on which state slices. For example, a row model may depend on filtering, sorting, and pagination, while one row selection checkbox may only need one row's selection value. Start with the default selector, then optimize with selectors and `table.Subscribe` where render cost matters.
+
 ### Setting Table State
 
 You should almost never need to set table state directly. TanStack Table features expose dedicated APIs for interacting with their state, and those APIs are the safest way to make changes because they preserve the feature's own rules and related updates.
+
+For example, use pagination APIs instead of mutating pagination state yourself:
 
 ```tsx
 table.nextPage()
@@ -266,6 +272,8 @@ If you need easy access to table state in other parts of your application, you c
 
 Use external atoms when the app should own one or more table state slices. Create stable writable atoms with `useCreateAtom` from TanStack Store, pass them to the table's `atoms` option, and subscribe to them with `useSelector` anywhere else in your app.
 
+This is especially useful for server-side data fetching. Pagination, sorting, or filters often belong in a query key, and external atoms let the app and the table share those values without lifting the entire table state through Preact state.
+
 ```tsx
 import { useCreateAtom, useSelector } from '@tanstack/preact-store'
 import {
@@ -308,11 +316,13 @@ function App() {
 }
 ```
 
-When using the `atoms` option for a slice, you do not need to add the matching `on[State]Change` option.
+When using the `atoms` option for a slice, you do not need to add the matching `on[State]Change` option. For example, if you pass `atoms.pagination`, table pagination APIs update that atom directly.
 
 #### External State
 
-The classic `state` plus `on[State]Change` pattern is still supported. This can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms.
+The classic `state` plus `on[State]Change` pattern is still supported. This can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Preact state updates re-render the owner component, and that render cannot be avoided by the `useTable` selector in the same way atom subscriptions can be placed lower in the tree.
+
+To control a slice with external state, pass both the state value and the matching callback:
 
 ```tsx
 const [sorting, setSorting] = useState<SortingState>([])
@@ -338,7 +348,7 @@ const table = useTable({
 })
 ```
 
-The v8-style `onStateChange` option is no longer part of the v9 `useTable` state model. v9 encourages keeping table state slices atomic and separated for performance.
+The v8-style `onStateChange` option (a single global state callback) is gone in v9. It is not supported by `useTable`. Use per-slice `on[State]Change` callbacks paired with `state.<slice>`, or external atoms via the `atoms` option. If you truly need to observe every state change, subscribe to `table.store` directly.
 
 ##### On State Change Callbacks
 
@@ -347,20 +357,55 @@ The `on[State]Change` callbacks are useful when you are controlling a matching s
 If you provide an `on[State]Change` callback, also provide the corresponding value in `state`. For example, `onSortingChange` should be paired with `state.sorting`.
 
 ```tsx
-onPaginationChange: (updater) => {
-  setPagination((old) => {
-    const next = updater instanceof Function ? updater(old) : updater
+const [sorting, setSorting] = useState<SortingState>([])
 
-    // side effects or validation can happen here
+const table = useTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  data,
+  state: {
+    sorting,
+  },
+  onSortingChange: setSorting,
+})
+```
 
-    return next
-  })
-}
+If you need to add logic inside a callback, check whether the incoming updater is a function or a value:
+
+```tsx
+const [pagination, setPagination] = useState<PaginationState>({
+  pageIndex: 0,
+  pageSize: 10,
+})
+
+const table = useTable({
+  features,
+  rowModels: {
+    paginatedRowModel: createPaginatedRowModel(),
+  },
+  columns,
+  data,
+  state: {
+    pagination,
+  },
+  onPaginationChange: (updater) => {
+    setPagination((old) => {
+      const next = updater instanceof Function ? updater(old) : updater
+
+      // side effects or validation can happen here
+
+      return next
+    })
+  },
+})
 ```
 
 ### State Types
 
-Most complex states in TanStack Table have their own TypeScript types that you can import and use.
+Most complex states in TanStack Table have their own TypeScript types that you can import and use. This is useful for Preact state, external atoms, and helper functions that work with table state.
 
 ```tsx
 import {
@@ -382,5 +427,12 @@ const [sorting, setSorting] = useState<SortingState>([
 `TableState<typeof features>` is inferred from the features registered on that table:
 
 ```tsx
+const features = tableFeatures({
+  rowPaginationFeature,
+  rowSortingFeature,
+})
+
 type MyTableState = TableState<typeof features>
 ```
+
+Prefer feature-specific state types like `SortingState`, `PaginationState`, or `RowSelectionState` when you are creating local state or external atoms for one slice.

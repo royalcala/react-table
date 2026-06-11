@@ -7,6 +7,10 @@ title: Table State (Angular) Guide
 Want to skip to the implementation? Check out these examples:
 
 - [Basic injectTable](../examples/basic-inject-table)
+- [Basic External Atoms](../examples/basic-external-atoms)
+- [Basic External State](../examples/basic-external-state)
+- [Row Selection (Signals)](../examples/row-selection-signal)
+- [With TanStack Query](../examples/with-tanstack-query)
 
 ## Table State (Angular) Guide
 
@@ -198,17 +202,71 @@ Slice reset APIs like `resetPagination()` update through that feature's state up
 
 ### Controlled State
 
-If you need easy access to table state in other parts of your application, you can control individual state slices. In Angular, the common pattern is to own those values with Angular signals and pass them through `state` plus the matching `on[State]Change` callback.
+If you need easy access to table state in other parts of your application, you can control individual state slices. In v9, external atoms are the recommended way to do this because they preserve the atomic state model and keep fine-grained subscriptions intact.
 
 #### External Atoms
 
-The core `atoms` table option is still available in Angular because the adapter re-exports TanStack Table core types. Use it when you already have compatible writable TanStack Store atoms and want a table slice to read from that atom.
+Use external atoms when the app should own one or more table state slices. Create stable writable atoms with `createAtom` from `@tanstack/angular-store` (class fields work well, since they are created once per component instance) and pass them to the table's `atoms` option. The table's derived `table.atoms.<slice>` reads then come from your atom, and they stay signal-reactive in templates, `computed(...)`, and `effect(...)` just like internally owned slices.
 
-Most Angular apps should start with Angular signals and the `state` option instead. That keeps ownership in Angular's signal model while `injectTable` keeps table options synchronized with signal changes.
+To consume the external atom itself inside Angular's reactive contexts, wrap it with `injectAtom` (or `injectSelector`) from `@tanstack/angular-store`, which returns an Angular signal. A plain `.get()` read returns the current snapshot and is fine in event handlers and other imperative code.
+
+This is especially useful for server-side data fetching. Pagination, sorting, or filters often belong in a query key, and external atoms let the app and the table share those values without funneling them through the `injectTable` options initializer (which re-runs whenever a signal read inside it changes).
+
+```ts
+import { Component } from '@angular/core'
+import { createAtom, injectAtom } from '@tanstack/angular-store'
+import { injectQuery } from '@tanstack/angular-query-experimental'
+import {
+  injectTable,
+  rowPaginationFeature,
+  tableFeatures,
+} from '@tanstack/angular-table'
+import type { PaginationState } from '@tanstack/angular-table'
+
+const features = tableFeatures({
+  rowPaginationFeature,
+})
+
+@Component({
+  /* ... */
+})
+export class App {
+  readonly paginationAtom = createAtom<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+
+  // an Angular signal view of the atom for reactive reads
+  readonly pagination = injectAtom(this.paginationAtom)
+
+  readonly dataQuery = injectQuery(() => ({
+    queryKey: ['data', this.pagination()],
+    queryFn: () => fetchData(this.pagination()),
+  }))
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {},
+    columns,
+    data: this.dataQuery.data()?.rows ?? [],
+    rowCount: this.dataQuery.data()?.rowCount,
+    atoms: {
+      pagination: this.paginationAtom,
+    },
+    manualPagination: true,
+  }))
+
+  // table pagination APIs update paginationAtom
+}
+```
+
+When using the `atoms` option for a slice, you do not need to add the matching `on[State]Change` option. For example, if you pass `atoms.pagination`, table pagination APIs update that atom directly.
+
+See the [Basic External Atoms example](../examples/basic-external-atoms) for a complete working version of this pattern (sorting and pagination owned by atoms), and the [With TanStack Query example](../examples/with-tanstack-query) for the server-side data fetching workflow (that example owns the slice with an Angular signal, but the query-key idea is the same).
 
 #### External State
 
-Use `state` plus `on[State]Change` when Angular should own a table state slice.
+The classic `state` plus `on[State]Change` pattern is still supported. In Angular this means owning the slice with an Angular signal, passing its current value through `state`, and writing it back in the matching callback. This can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms: every signal write re-runs the `injectTable` options initializer and calls `table.setOptions`. The [Basic External State example](../examples/basic-external-state) shows this pattern in full.
 
 ```ts
 readonly sorting = signal<SortingState>([])
@@ -243,6 +301,8 @@ readonly table = injectTable(() => ({
 ```
 
 Use the per-slice `on[State]Change` callbacks to keep controlled table state slices atomic and separated.
+
+The v8-style `onStateChange` option (a single global state callback) is gone in v9. Use per-slice `on[State]Change` callbacks paired with `state.<slice>`, or external atoms via the `atoms` option. If you truly need to observe every state change, subscribe to `table.store` directly.
 
 ##### On State Change Callbacks
 

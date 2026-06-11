@@ -7,6 +7,7 @@ title: Column Sizing (Svelte) Guide
 Want to skip to the implementation? Check out these Svelte examples:
 
 - [Column Sizing](../examples/column-sizing)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
@@ -47,6 +48,8 @@ export const defaultColumnSizing = {
 These defaults can be overridden by both `tableOptions.defaultColumn` and individual column defs, in that order.
 
 ```ts
+const features = tableFeatures({ columnSizingFeature })
+
 const columns = [
   {
     accessorKey: 'col1',
@@ -56,7 +59,7 @@ const columns = [
 ]
 
 const table = createTable({
-  features: tableFeatures({ columnSizingFeature }),
+  features,
   rowModels: {},
   defaultColumn: {
     size: 200, // starting column size
@@ -121,4 +124,57 @@ table.setColumnSizing({
 
 table.resetColumnSizing()
 table.resetColumnSizing(true)
+```
+
+### Managing Column Sizing State
+
+If you need to own the `columnSizing` state yourself (for example, to persist user-set column widths), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the sizing state without coupling that code to the table instance.
+
+```ts
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+import type { ColumnSizingState } from '@tanstack/svelte-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+const columnSizingAtom = createAtom<ColumnSizingState>({})
+
+const columnSizing = useSelector(columnSizingAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  get data() {
+    return data
+  },
+  atoms: {
+    columnSizing: columnSizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnSizing` plus `onColumnSizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+import { createTableState } from '@tanstack/svelte-table'
+import type { ColumnSizingState } from '@tanstack/svelte-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+const [columnSizing, setColumnSizing] = createTableState<ColumnSizingState>({})
+
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  get data() {
+    return data
+  },
+  state: {
+    get columnSizing() {
+      return columnSizing()
+    },
+  },
+  onColumnSizingChange: setColumnSizing,
+})
 ```

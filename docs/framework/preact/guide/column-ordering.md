@@ -45,8 +45,10 @@ If you don't provide a `columnOrder` state, TanStack Table will just use the ord
 If all you need to do is specify the initial column order, you can just specify the `columnOrder` state in the `initialState` table option.
 
 ```tsx
+const features = tableFeatures({ columnOrderingFeature })
+
 const table = useTable({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -62,54 +64,86 @@ const table = useTable({
 
 If you need to dynamically change the column order, or set the column order after the table has been initialized, you can manage the `columnOrder` state just like any other table state.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the column order without re-rendering the component that owns the table.
+
 ```tsx
-const [columnOrder, setColumnOrder] = useState<string[]>(['columnId1', 'columnId2', 'columnId3'])
+import { useCreateAtom, useSelector } from '@tanstack/preact-store'
+import { useTable, tableFeatures, columnOrderingFeature } from '@tanstack/preact-table'
+import type { ColumnOrderState } from '@tanstack/preact-table'
+
+const features = tableFeatures({ columnOrderingFeature })
+
+const columnOrderAtom = useCreateAtom<ColumnOrderState>([
+  'columnId1',
+  'columnId2',
+  'columnId3',
+])
+
+const columnOrder = useSelector(columnOrderAtom) // subscribe wherever it is needed
+
+const table = useTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnOrder: columnOrderAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnOrder` plus `onColumnOrderChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
+const features = tableFeatures({ columnOrderingFeature })
+
+const [columnOrder, setColumnOrder] = useState<ColumnOrderState>(['columnId1', 'columnId2', 'columnId3'])
 //...
 const table = useTable({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   state: {
     columnOrder,
     //...
-  }
+  },
   onColumnOrderChange: setColumnOrder,
   //...
-});
+})
 ```
 
 ### Reordering Columns
 
-If the table has UI that allows the user to reorder columns, you can set up the logic something like this:
+If the table has UI that allows the user to reorder columns, hook the drop event of your drag-and-drop solution up to `table.setColumnOrder`. With native browser drag events, track which column is being dragged and splice it into place when it is dropped on a target column:
 
 ```tsx
-const [columnOrder, setColumnOrder] = useState<string[]>(columns.map(c => c.id));
+import { useState } from 'preact/hooks'
 
-//depending on your dnd solution of choice, you may or may not need state like this
-const [movingColumnId, setMovingColumnId] = useState<string | null>(null);
-const [targetColumnId, setTargetColumnId] = useState<string | null>(null);
+const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null)
 
-//util function to splice and reorder the columnOrder array
-const reorderColumn = <TFeatures extends TableFeatures,  TData extends RowData>(
-  movingColumnId: Column<TFeatures, TData>,
-  targetColumnId: Column<TFeatures, TData>,
-): string[] => {
-  const newColumnOrder = [...columnOrder];
-  newColumnOrder.splice(
-    newColumnOrder.indexOf(targetColumnId),
-    0,
-    newColumnOrder.splice(newColumnOrder.indexOf(movingColumnId), 1)[0],
-  );
-  setColumnOrder(newColumnOrder);
-};
+// reorder columns after drag & drop
+const handleDrop = (targetColumnId: string) => {
+  if (!draggedColumnId || draggedColumnId === targetColumnId) return
+  table.setColumnOrder((prevColumnOrder) => {
+    const newColumnOrder = [...prevColumnOrder]
+    const [movedColumnId] = newColumnOrder.splice(
+      newColumnOrder.indexOf(draggedColumnId),
+      1,
+    )
+    newColumnOrder.splice(newColumnOrder.indexOf(targetColumnId), 0, movedColumnId)
+    return newColumnOrder
+  })
+  setDraggedColumnId(null)
+}
 
-const handleDragEnd = (e: DragEvent) => {
-  if(!movingColumnId || !targetColumnId) return;
-  setColumnOrder(reorderColumn(movingColumnId, targetColumnId));
-};
-
-//use your dnd solution of choice
+// wire up onDragStart={() => setDraggedColumnId(header.column.id)},
+// onDragOver={(e) => e.preventDefault()}, and
+// onDrop={() => handleDrop(header.column.id)} on your <th> elements
 ```
+
+If you use a drag-and-drop library instead, call `table.setColumnOrder` from its drop callback in the same way (most libraries provide an `arrayMove`-style utility for the splice logic).
+
+`table.setColumnOrder` works the same whether the table manages the `columnOrder` state internally, you control it with `state` + `onColumnOrderChange`, or you own it with an external atom.
 
 ### Column Ordering APIs
 
@@ -137,12 +171,12 @@ These helpers are useful for styling column boundaries or building drag-and-drop
 
 #### Drag and Drop Column Reordering Suggestions (Preact)
 
-There are undoubtedly many ways to implement drag and drop features along-side TanStack Table. Here are a few suggestions in order for you to not have a bad time:
+TanStack Table is not opinionated about which drag-and-drop solution you use. There is no official Preact DnD example yet, but here are a few suggestions:
 
-1. Do NOT try to use [`"react-dnd"`](https://react-dnd.github.io/react-dnd/docs/overview) _if you are using Preact or newer_. framework-specific DnD was an important library for its time, but it now does not get updated very often, and it has incompatibilities with Preact, especially in Preact development mode. It is still possible to get it to work, but there are newer alternatives that have better compatibility and are more actively maintained. framework-specific DnD's Provider may also interfere and conflict with any other DnD solutions you may want to try in your app.
+1. Native browser drag events (`onDragStart`, `onDragOver`, `onDrop`) with a little of your own state are often the simplest fit for Preact. This approach has zero dependencies and works directly with Preact's event handling, but you will need to do extra work for proper touch support on mobile. [Material React Table](https://www.material-react-table.com/docs/examples/column-ordering) implements TanStack Table column ordering this way with no DnD dependencies, and its splice logic translates directly to Preact.
 
-2. Use [`"@dnd-kit/core"`](https://dndkit.com/). DnD Kit is a modern, modular and lightweight drag and drop library that is highly compatible with the modern Preact ecosystem, and it works well with semantic `<table>` markup. The official framework-specific DnD examples, Column DnD and Row DnD, use DnD Kit.
+2. [Pragmatic drag and drop](https://atlassian.design/components/pragmatic-drag-and-drop/about) has a framework-agnostic core that attaches to plain DOM elements, so it works in Preact apps without any compatibility layer.
 
-3. Consider other DnD libraries like [`"react-beautiful-dnd"`](https://github.com/atlassian/react-beautiful-dnd), but be aware of their potentially large bundle sizes, maintenance status, and compatibility with `<table>` markup.
+3. [DnD Kit](https://dndkit.com/) is a React library, but it can work in Preact apps that alias `react` to `preact/compat`. The official React [Column DnD example](https://tanstack.com/table/latest/docs/framework/react/examples/column-dnd) uses it and is a useful reference for the `arrayMove` + `table.setColumnOrder` pattern, even though there is no Preact port of that example yet.
 
-4. Consider using native browser events and state management to implement lightweight drag and drop features. However, be aware that this approach may not be best for mobile users if you do not go the extra mile to implement proper touch events. [Material React Table V2](https://www.material-react-table.com/docs/examples/column-ordering) is an example of a library that implements TanStack Table with only browser drag and drop events such as `onDragStart`, `onDragEnd`, `onDragEnter` and no other dependencies. Browse its source code to see how it is done.
+4. If you evaluate other DnD libraries, check their maintenance status, whether they require `preact/compat`, bundle size, and how well they handle `<table>` markup before committing. Older React-ecosystem DnD libraries are mostly no longer actively developed and are not worth the compatibility effort.

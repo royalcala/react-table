@@ -151,7 +151,7 @@ export function useTable<
     const tableInstance = constructTable({
       ...tableOptions,
       features: {
-        coreReativityFeature: reactReactivity(),
+        coreReactivityFeature: reactReactivity(),
         ...tableOptions.features,
       },
     }) as unknown as ReactTable<TFeatures, TData, TSelected>

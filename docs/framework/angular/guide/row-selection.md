@@ -7,6 +7,8 @@ title: Row Selection (Angular) Guide
 Want to skip to the implementation? Check out these Angular examples:
 
 - [Row Selection](../examples/row-selection)
+- [Row Selection (Signals)](../examples/row-selection-signal)
+
 ### Angular Setup
 
 ```ts
@@ -33,7 +35,7 @@ The row selection feature keeps track of which rows are selected and allows you 
 
 ### Access Row Selection State
 
-The table instance already manages the row selection state for you (though as seen down below, it may be more convenient to manage the row selection state in your own scope). You can access the internal row selection state or the selected rows from a few APIs.
+The table instance already manages the row selection state for you. You can access the row selection state or the selected rows from a few APIs.
 
 - `table.atoms.rowSelection.get()` - returns the current row selection state
 - `getSelectedRowModel()` - returns selected rows
@@ -47,19 +49,40 @@ console.log(table.getFilteredSelectedRowModel().rows) //get filtered client-side
 console.log(table.getGroupedSelectedRowModel().rows) //get grouped client-side selected rows
 ```
 
+In Angular, table atom reads are signal reads, so reading `table.atoms.rowSelection.get()` in a template expression, `computed(...)`, or `effect(...)` automatically tracks updates.
+
 > Note: If you are using `manualPagination`, be aware that the `getSelectedRowModel` API will only return selected rows on the current page because table row models can only generate rows based on the `data` that is passed in. Row selection state, however, can contain row ids that are not present in the `data` array just fine.
 
 ### Manage Row Selection State
 
-Even though the table instance will already manage the row selection state for you, it is usually more convenient to manage the state yourself in order to have easy access to the selected row ids that you can use to make API calls or other actions.
-
-Use the `onRowSelectionChange` table option to hoist up the row selection state to your own scope. Then pass the row selection state back to the table instance using in the `state` table option.
+If you need easy access to the selected row ids in other parts of your application (for example, to make API calls with them), you can own the row selection state slice yourself. The recommended way in v9 is an external atom (created with `createAtom` from `@tanstack/angular-store`) passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the selection value can be read anywhere in your app without re-running the `injectTable` options initializer on every change.
 
 ```ts
+import { createAtom } from '@tanstack/angular-store'
 import { injectTable, tableFeatures, rowSelectionFeature } from '@tanstack/angular-table'
+import type { RowSelectionState } from '@tanstack/angular-table'
 
 const features = tableFeatures({ rowSelectionFeature })
 
+export class App {
+  readonly rowSelectionAtom = createAtom<RowSelectionState>({})
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {},
+    //...
+    atoms: {
+      rowSelection: this.rowSelectionAtom, // selection APIs now update rowSelectionAtom
+    },
+  }))
+
+  // read this.rowSelectionAtom.get() wherever you need the value
+}
+```
+
+Alternatively, the v8-style `state.rowSelection` plus `onRowSelectionChange` pattern is still supported. In Angular this means owning the slice with an Angular signal, as shown in the [Row Selection (Signals) example](../examples/row-selection-signal). It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 readonly rowSelection = signal<RowSelectionState>({})
 
 readonly table = injectTable(() => ({
@@ -73,7 +96,7 @@ readonly table = injectTable(() => ({
   state: {
     rowSelection: this.rowSelection(),
   },
-})
+}))
 ```
 
 ### Useful Row Ids
@@ -86,7 +109,7 @@ readonly table = injectTable(() => ({
   rowModels: {},
   //...
   getRowId: (row) => row.uuid, // use the row's uuid from your database as the row id
-})
+}))
 ```
 
 Now as rows are selected, the row selection state will look something like this:
@@ -117,7 +140,7 @@ Row selection is enabled by default for all rows. To either enable row selection
 readonly table = injectTable(() => ({
   //...
   enableRowSelection: row => row.original.age > 18, //only enable row selection for adults
-})
+}))
 ```
 
 To enforce whether a row is selectable or not in your UI, you can use the `row.getCanSelect()` API for your checkboxes or other selection UI.
@@ -133,7 +156,7 @@ readonly table = injectTable(() => ({
   //...
   enableMultiRowSelection: false, //only allow a single row to be selected at once
   // enableMultiRowSelection: row => row.original.age > 18, //only allow a single row to be selected at once for adults
-})
+}))
 ```
 
 ### Sub-Row Selection
@@ -145,7 +168,7 @@ readonly table = injectTable(() => ({
   //...
   enableSubRowSelection: false, //disable sub-row selection
   // enableSubRowSelection: row => row.original.age > 18, //disable sub-row selection for adults
-})
+}))
 ```
 
 ### Render Row Selection UI

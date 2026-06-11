@@ -7,6 +7,7 @@ title: Row Selection (Solid) Guide
 Want to skip to the implementation? Check out these Solid examples:
 
 - [Row Selection](../examples/row-selection)
+
 Use getters for reactive inputs such as `data` when passing Solid signals to `createTable`.
 
 ### Solid Setup
@@ -21,7 +22,7 @@ const table = createTable({
   rowModels: {},
   columns,
   get data() {
-    return data
+    return data()
   },
 })
 ```
@@ -32,9 +33,9 @@ The row selection feature keeps track of which rows are selected and allows you 
 
 ### Access Row Selection State
 
-The table instance already manages the row selection state for you (though as seen down below, it may be more convenient to manage the row selection state in your own scope). You can access the internal row selection state or the selected rows from a few APIs.
+The table instance already manages the row selection state for you. You can access the row selection state or the selected rows from a few APIs.
 
-- `table.atoms.rowSelection.get()` - returns the current row selection state
+- `table.atoms.rowSelection.get()` - returns the row selection state (reactive when read inside a tracked scope)
 - `getSelectedRowModel()` - returns selected rows
 - `getFilteredSelectedRowModel()` - returns selected rows after filtering
 - `getGroupedSelectedRowModel()` - returns selected rows after grouping and sorting
@@ -46,29 +47,50 @@ console.log(table.getFilteredSelectedRowModel().rows) //get filtered client-side
 console.log(table.getGroupedSelectedRowModel().rows) //get grouped client-side selected rows
 ```
 
+In Solid, the table's state atoms are backed by Solid signals, so `table.atoms.rowSelection.get()` is a reactive read when called inside a tracked scope (JSX, `createMemo`, `createEffect`, or `table.Subscribe`). In event handlers or other untracked code, the same call simply returns the current value.
+
 > Note: If you are using `manualPagination`, be aware that the `getSelectedRowModel` API will only return selected rows on the current page because table row models can only generate rows based on the `data` that is passed in. Row selection state, however, can contain row ids that are not present in the `data` array just fine.
 
 ### Manage Row Selection State
 
-Even though the table instance will already manage the row selection state for you, it is usually more convenient to manage the state yourself in order to have easy access to the selected row ids that you can use to make API calls or other actions.
-
-Use the `onRowSelectionChange` table option to hoist up the row selection state to your own scope. Then pass the row selection state back to the table instance using in the `state` table option.
+If you need easy access to the selected row ids in other parts of your application (for example, to make API calls with them), you can own the row selection state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the selection value can be read anywhere in your app without making the table depend on component-local state.
 
 ```ts
-import { createTable, tableFeatures, rowSelectionFeature } from '@tanstack/solid-table'
+import { createAtom, useSelector } from '@tanstack/solid-store'
+import { createTable, tableFeatures, rowSelectionFeature, type RowSelectionState } from '@tanstack/solid-table'
 
 const features = tableFeatures({ rowSelectionFeature })
 
+const rowSelectionAtom = createAtom<RowSelectionState>({})
+
+// subscribe to the atom wherever you need the value
+const rowSelection = useSelector(rowSelectionAtom)
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    rowSelection: rowSelectionAtom, // selection APIs now update rowSelectionAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.rowSelection` plus `onRowSelectionChange` pattern is still supported with Solid signals. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 const [rowSelection, setRowSelection] = createSignal<RowSelectionState>({})
 
 const table = createTable({
   features,
   rowModels: {},
   //...
-  onRowSelectionChange: setRowSelection,
   state: {
-    rowSelection,
+    get rowSelection() {
+      return rowSelection() // connect the signal back down to the table
+    },
   },
+  onRowSelectionChange: setRowSelection,
 })
 ```
 

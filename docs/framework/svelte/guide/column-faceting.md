@@ -1,5 +1,5 @@
 ---
-title: Column Faceting (Svelte) Guide
+title: Faceting (Svelte) Guide
 ---
 
 ## Examples
@@ -7,18 +7,20 @@ title: Column Faceting (Svelte) Guide
 Want to skip to the implementation? Check out these Svelte examples:
 
 - [Faceted Filters](../examples/filters-faceted)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
 
 ```ts
-import { createTable, tableFeatures, columnFacetingFeature, createFacetedRowModel, createFacetedUniqueValues, createFacetedMinMaxValues } from '@tanstack/svelte-table'
+import { createTable, tableFeatures, columnFacetingFeature, columnFilteringFeature, createFacetedRowModel, createFacetedUniqueValues, createFacetedMinMaxValues, createFilteredRowModel, filterFns } from '@tanstack/svelte-table'
 
-const features = tableFeatures({ columnFacetingFeature })
+const features = tableFeatures({ columnFacetingFeature, columnFilteringFeature })
 
 const table = createTable({
   features,
   rowModels: {
+    filteredRowModel: createFilteredRowModel(filterFns),
     facetedRowModel: createFacetedRowModel(),
     facetedUniqueValues: createFacetedUniqueValues(),
     facetedMinMaxValues: createFacetedMinMaxValues(),
@@ -30,29 +32,33 @@ const table = createTable({
 })
 ```
 
-## Column Faceting (Svelte) Guide
+## Faceting (Svelte) Guide
 
-Column Faceting is a feature that allows you to generate lists of values for a given column from that column's data. For example, a list of unique values in a column can be generated from all rows in that column to be used as search suggestions in an autocomplete filter component. Or, a tuple of minimum and maximum values can be generated from a column of numbers to be used as a range for a range slider filter component.
+Faceting is a feature that generates lists of values from your table's data, either for a single column (column faceting) or across the entire table (global faceting). For example, a list of unique values can be used as search suggestions in an autocomplete filter component, or a tuple of minimum and maximum values from a column of numbers can drive a range slider filter component. The same row models power both the per-column and table-wide APIs.
 
 ### Column Faceting Row Models
 
-In order to use any of the column faceting features, add the `columnFacetingFeature` to your features and the appropriate faceted row models to `rowModels`.
+In order to use any of the column faceting features, add the `columnFacetingFeature` to your features and the appropriate faceted row models to `rowModels`. Faceting exists to power filter UIs, so in practice you will also register the `columnFilteringFeature` and a `filteredRowModel`. Without a filtered row model, the faceted row models fall back to the pre-filtered rows and the facet values will not react to other columns' filters.
 
 ```ts
 import {
   createTable,
   tableFeatures,
   columnFacetingFeature,
+  columnFilteringFeature,
   createFacetedRowModel,
   createFacetedMinMaxValues,
   createFacetedUniqueValues,
+  createFilteredRowModel,
+  filterFns,
 } from '@tanstack/svelte-table'
 
-const features = tableFeatures({ columnFacetingFeature })
+const features = tableFeatures({ columnFacetingFeature, columnFilteringFeature })
 
 const table = createTable({
   features,
   rowModels: {
+    filteredRowModel: createFilteredRowModel(filterFns), // facet values react to other columns' filters
     facetedRowModel: createFacetedRowModel(), // required for faceting (other faceted row models depend on this)
     facetedMinMaxValues: createFacetedMinMaxValues(), // if you need min/max values
     facetedUniqueValues: createFacetedUniqueValues(), // if you need a list of unique values
@@ -81,35 +87,64 @@ const autoCompleteSuggestions =
 const [min, max] = column.getFacetedMinMaxValues() ?? [0, 1];
 ```
 
-### Custom (Server-Side) Faceting
+### Global Faceting
 
-If instead of using the built-in client-side faceting features, you can implement your own faceting logic on the server-side and pass the faceted values to the client-side. You can use the `getFacetedUniqueValues` and `getFacetedMinMaxValues` table options to resolve the faceted values from the server-side.
+The same `columnFacetingFeature` and faceted row models also power table-wide (global) faceting. Where column faceting derives values from a single column, global faceting derives values across all columns, which is useful for populating a global filter's autocomplete suggestions or a global range slider. If your table also uses global filtering, register the `globalFilteringFeature` so global facet values react to the active global filter.
+
+Use the global faceting table instance APIs to read the values:
 
 ```ts
-const facetingQuery = useQuery(
+const globalFacetedRows = table.getGlobalFacetedRowModel().flatRows
+```
+
+```ts
+// list of unique values for autocomplete filter
+const autoCompleteSuggestions =
+ Array.from(table.getGlobalFacetedUniqueValues().keys())
+  .sort()
+  .slice(0, 5000);
+```
+
+```ts
+// tuple of min and max values for range filter
+const [min, max] = table.getGlobalFacetedMinMaxValues() ?? [0, 1];
+```
+
+### Custom (Server-Side) Faceting
+
+Instead of using the built-in client-side faceting features, you can implement your own faceting logic on the server-side and pass the faceted values to the client-side. Supply custom `rowModels.facetedUniqueValues` and `rowModels.facetedMinMaxValues` factories. Each factory receives the table and a column ID and returns a thunk that resolves the faceted values. The column instance APIs (`column.getFacetedUniqueValues()` and `column.getFacetedMinMaxValues()`) will then return your server-provided values.
+
+```ts
+const facetingQuery = createQuery(
   //...
 )
 
 const table = createTable({
   features,
   rowModels: {
-    facetedRowModel: createFacetedRowModel(),
-    facetedUniqueValues: createFacetedUniqueValues(),
-    facetedMinMaxValues: createFacetedMinMaxValues(),
+    facetedUniqueValues: (_table, columnId) => () => {
+      const uniqueValueMap = new Map<string, number>()
+      //... populate from facetingQuery data for this columnId
+      return uniqueValueMap
+    },
+    facetedMinMaxValues: (_table, columnId) => () => {
+      //... read from facetingQuery data for this columnId
+      return [min, max]
+    },
   },
   columns,
   data,
-  getFacetedUniqueValues: (table, columnId) => {
-    const uniqueValueMap = new Map<string, number>()
-    //...
-    return uniqueValueMap
-  },
-  getFacetedMinMaxValues: (table, columnId) => {
-    //...
-    return [min, max]
-  },
   //...
 })
+```
+
+The same factories also serve global faceting. Global faceting requests values with the internal `__global__` column ID, so you can branch on it inside the same `facetedUniqueValues` and `facetedMinMaxValues` factories to return table-wide facet values:
+
+```ts
+facetedUniqueValues: (_table, columnId) => () => {
+  if (columnId !== '__global__') return new Map() // per-column facets
+  return new Map(globalFacets.uniqueValues) // global facets
+},
 ```
 
 Alternatively, you don't have to put any of your faceting logic through the TanStack Table APIs at all. Just fetch your lists and pass them to your filter components directly.

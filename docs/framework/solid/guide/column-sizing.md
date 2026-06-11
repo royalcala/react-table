@@ -7,6 +7,7 @@ title: Column Sizing (Solid) Guide
 Want to skip to the implementation? Check out these Solid examples:
 
 - [Column Sizing](../examples/column-sizing)
+
 Use getters for reactive inputs such as `data` when passing Solid signals to `createTable`.
 
 ### Solid Setup
@@ -21,7 +22,7 @@ const table = createTable({
   rowModels: {},
   columns,
   get data() {
-    return data
+    return data()
   },
 })
 ```
@@ -47,6 +48,8 @@ export const defaultColumnSizing = {
 These defaults can be overridden by both `tableOptions.defaultColumn` and individual column defs, in that order.
 
 ```tsx
+const features = tableFeatures({ columnSizingFeature })
+
 const columns = [
   {
     accessorKey: 'col1',
@@ -56,7 +59,7 @@ const columns = [
 ]
 
 const table = createTable({
-  features: tableFeatures({ columnSizingFeature }),
+  features,
   rowModels: {},
   defaultColumn: {
     size: 200, // starting column size
@@ -121,4 +124,50 @@ table.setColumnSizing({
 
 table.resetColumnSizing()
 table.resetColumnSizing(true)
+```
+
+### Managing Column Sizing State
+
+If you need to own the `columnSizing` state yourself (for example, to persist user-set column widths), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the sizing state without going through the component that owns the table.
+
+```tsx
+import { createAtom, useSelector } from '@tanstack/solid-store'
+import type { ColumnSizingState } from '@tanstack/solid-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+const columnSizingAtom = createAtom<ColumnSizingState>({})
+
+const columnSizing = useSelector(columnSizingAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    columnSizing: columnSizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnSizing` plus `onColumnSizingChange` pattern is still supported with Solid signals. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
+const features = tableFeatures({ columnSizingFeature })
+
+const [columnSizing, setColumnSizing] = createSignal<ColumnSizingState>({})
+
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  state: {
+    get columnSizing() {
+      return columnSizing() // connect the signal back down to the table
+    },
+  },
+  onColumnSizingChange: setColumnSizing,
+})
 ```

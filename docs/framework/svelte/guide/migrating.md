@@ -161,7 +161,6 @@ Use it as a temporary migration shortcut. Explicit feature registration is the p
 | Column Resizing | `columnResizingFeature` |
 | Column Grouping | `columnGroupingFeature` |
 | Column Faceting | `columnFacetingFeature` |
-| Global Faceting | `globalFacetingFeature` |
 
 ---
 
@@ -335,6 +334,8 @@ const pageIndex = subscribeTable(
 ```
 
 ### Controlled State
+
+The v8-style `state` plus `on[State]Change` pattern still works in v9 and is the most direct migration path, but [External Atoms](#external-atoms) (below) are the preferred v9 way to own state slices outside the table.
 
 Use `createTableState` for Svelte-owned state slices that need to accept TanStack Table updater functions.
 
@@ -544,7 +545,7 @@ const table = createAppTable({
 })
 ```
 
-See the [Composable Tables Guide](./composable-tables.md) for full patterns.
+See the [Composable Tables Guide](./composable-tables) for full patterns.
 
 ---
 
@@ -649,7 +650,7 @@ type Person = {
 - [ ] Upgrade the app to Svelte 5.
 - [ ] Replace `createSvelteTable` with `createTable`.
 - [ ] Replace Svelte 3/4 writable-store table patterns with runes and getters.
-- [ ] Add `features: tableFeatures({ ... })`.
+- [ ] Define `features` using `tableFeatures()` (or use `stockFeatures`).
 - [ ] Move root `get*RowModel` options into `rowModels`.
 - [ ] Remove `getCoreRowModel`; the core row model is automatic.
 - [ ] Pass `sortFns`, `filterFns`, and `aggregationFns` to row model factories.

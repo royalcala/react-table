@@ -33,7 +33,7 @@ A table instance has a few state surfaces:
 - `table.atoms` are readonly derived atoms exposed per registered state slice.
 - `table.store` is a readonly flat TanStack Store derived by putting all of the registered `table.atoms` together.
 
-The Vue adapter provides `vueReactivity()` to the table's `coreReativityFeature`. Core readonly atoms are Vue `computed` values, writable atoms are `shallowRef` values, and subscriptions are backed by `watch(..., { flush: 'sync' })`. `useTable` also watches reactive option dependencies and controlled state values so it can call `table.setOptions` when Vue state changes.
+The Vue adapter provides `vueReactivity()` to the table's `coreReactivityFeature`. Core readonly atoms are Vue `computed` values, writable atoms are `shallowRef` values, and subscriptions are backed by `watch(..., { flush: 'sync' })`. `useTable` also watches reactive option dependencies and controlled state values so it can call `table.setOptions` when Vue state changes.
 
 ### Feature-based State
 
@@ -129,11 +129,11 @@ data.value = makeData(200)
 
 #### Fine-grained Updates with table.Subscribe
 
-Use `table.Subscribe` in render functions or JSX when you want a specific part of the Vue tree to create a reactive render boundary. Its child function receives `table.atoms`, and Vue tracks only the atom reads used inside that child.
+Use `table.Subscribe` in render functions or JSX when you want a specific part of the Vue tree to create a reactive render boundary. It receives `table.atoms` through a `children` function, and Vue tracks only the atom reads used inside that function. Note that `table.Subscribe` reads `children` as a prop, so pass it explicitly (Vue JSX delivers element children as slots, not props).
 
 ```tsx
-<table.Subscribe>
-  {(atoms) => {
+<table.Subscribe
+  children={(atoms) => {
     void atoms.columnFilters.get()
     void atoms.globalFilter.get()
     void atoms.pagination.get()
@@ -146,12 +146,14 @@ Use `table.Subscribe` in render functions or JSX when you want a specific part o
       </tbody>
     )
   }}
-</table.Subscribe>
+/>
 ```
 
+You can also call it as a plain function inside a render function:
+
 ```tsx
-<table.Subscribe>
-  {(atoms) => (
+{table.Subscribe({
+  children: (atoms) => (
     <tbody>
       {table.getRowModel().rows.map((row) => (
         <tr key={row.id}>
@@ -165,8 +167,8 @@ Use `table.Subscribe` in render functions or JSX when you want a specific part o
         </tr>
       ))}
     </tbody>
-  )}
-</table.Subscribe>
+  ),
+})}
 ```
 
 ### Setting Table State

@@ -7,6 +7,7 @@ title: Column Ordering (Svelte) Guide
 Want to skip to the implementation? Check out these Svelte examples:
 
 - [Column Ordering](../examples/column-ordering)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
@@ -49,8 +50,10 @@ If you don't provide a `columnOrder` state, TanStack Table will just use the ord
 If all you need to do is specify the initial column order, you can just specify the `columnOrder` state in the `initialState` table option.
 
 ```ts
+const features = tableFeatures({ columnOrderingFeature })
+
 const table = createTable({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -66,8 +69,40 @@ const table = createTable({
 
 If you need to dynamically change the column order, or set the column order after the table has been initialized, you can manage the `columnOrder` state just like any other table state.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the column order without coupling that code to the table instance.
+
+```ts
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+import { createTable, tableFeatures, columnOrderingFeature } from '@tanstack/svelte-table'
+import type { ColumnOrderState } from '@tanstack/svelte-table'
+
+const features = tableFeatures({ columnOrderingFeature })
+
+const columnOrderAtom = createAtom<ColumnOrderState>([
+  'columnId1',
+  'columnId2',
+  'columnId3',
+])
+
+const columnOrder = useSelector(columnOrderAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnOrder: columnOrderAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnOrder` plus `onColumnOrderChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
 ```ts
 import { createTableState } from '@tanstack/svelte-table'
+
+const features = tableFeatures({ columnOrderingFeature })
 
 const [columnOrder, setColumnOrder] = createTableState<ColumnOrderState>([
   'columnId1',
@@ -76,7 +111,7 @@ const [columnOrder, setColumnOrder] = createTableState<ColumnOrderState>([
 ])
 
 const table = createTable({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   state: {
@@ -90,38 +125,24 @@ const table = createTable({
 
 ### Reordering Columns
 
-If the table has UI that allows the user to reorder columns, you can set up the logic something like this:
+If the table has UI that allows the user to reorder columns, hook the drop event of your drag-and-drop solution up to `table.setColumnOrder`. It accepts either a new array of column ids or an updater function, so a drop handler usually just moves the dragged column id within the previous order:
 
 ```ts
-const [columnOrder, setColumnOrder] = createTableState<ColumnOrderState>(
-  columns.map(column => column.id),
-)
-
-//depending on your dnd solution of choice, you may or may not need state like this
-let movingColumnId = $state<string | null>(null)
-let targetColumnId = $state<string | null>(null)
-
-//util function to splice and reorder the columnOrder array
-const reorderColumn = (
-  movingColumnId: string,
-  targetColumnId: string,
-): string[] => {
-  const newColumnOrder = [...columnOrder()]
-  newColumnOrder.splice(
-    newColumnOrder.indexOf(targetColumnId),
-    0,
-    newColumnOrder.splice(newColumnOrder.indexOf(movingColumnId), 1)[0],
-  )
-  return newColumnOrder
+// reorder columns after drag & drop
+function handleDrop(movingColumnId: string, targetColumnId: string) {
+  table.setColumnOrder((prevColumnOrder) => {
+    const newColumnOrder = [...prevColumnOrder]
+    newColumnOrder.splice(
+      newColumnOrder.indexOf(targetColumnId),
+      0,
+      newColumnOrder.splice(newColumnOrder.indexOf(movingColumnId), 1)[0]!,
+    )
+    return newColumnOrder
+  })
 }
-
-const handleDragEnd = (e: DragEvent) => {
-  if (!movingColumnId || !targetColumnId) return
-  setColumnOrder(reorderColumn(movingColumnId, targetColumnId))
-}
-
-//use your dnd solution of choice
 ```
+
+`table.setColumnOrder` works the same whether the table manages the `columnOrder` state internally, you control it with `state` + `onColumnOrderChange`, or you own it with an external atom. The official [Column Ordering example](../examples/column-ordering) demonstrates reordering with `table.setColumnOrder` (it shuffles the columns rather than wiring up drag-and-drop).
 
 ### Column Ordering APIs
 
@@ -149,12 +170,12 @@ These helpers are useful for styling column boundaries or building drag-and-drop
 
 #### Drag and Drop Column Reordering Suggestions (Svelte)
 
-There are undoubtedly many ways to implement drag and drop features along-side TanStack Table. Here are a few suggestions in order for you to not have a bad time:
+TanStack Table is not opinionated about which drag-and-drop solution you use, and this repository does not currently include an official Svelte column drag-and-drop example. Here are a few suggestions:
 
-1. Do NOT try to use [`"react-dnd"`](https://react-dnd.github.io/react-dnd/docs/overview) _if you are using Svelte or newer_. framework-specific DnD was an important library for its time, but it now does not get updated very often, and it has incompatibilities with Svelte, especially in Svelte development mode. It is still possible to get it to work, but there are newer alternatives that have better compatibility and are more actively maintained. framework-specific DnD's Provider may also interfere and conflict with any other DnD solutions you may want to try in your app.
+1. Consider native browser drag events (`ondragstart`, `ondragenter`, `ondragend`) with a little `$state` of your own if you want zero dependencies. Svelte's inline event handlers make this approach very lightweight, but you will need to do extra work for proper touch support on mobile.
 
-2. Use [`"@dnd-kit/core"`](https://dndkit.com/). DnD Kit is a modern, modular and lightweight drag and drop library that is highly compatible with the modern Svelte ecosystem, and it works well with semantic `<table>` markup. The official framework-specific DnD examples, Column DnD and Row DnD, use DnD Kit.
+2. [svelte-dnd-action](https://github.com/isaacHagoel/svelte-dnd-action) is a popular Svelte-native drag-and-drop library built around an action you attach with `use:dndzone`. Check how well it handles semantic `<table>` markup for your use case before committing.
 
-3. Consider other DnD libraries like [`"react-beautiful-dnd"`](https://github.com/atlassian/react-beautiful-dnd), but be aware of their potentially large bundle sizes, maintenance status, and compatibility with `<table>` markup.
+3. Atlassian's [Pragmatic drag and drop](https://atlassian.design/components/pragmatic-drag-and-drop/about) is framework-agnostic, actively maintained, and works with Svelte. Avoid React-only DnD libraries (including DnD Kit's React packages); they depend on React's component model and do not work in Svelte apps.
 
-4. Consider using native browser events and state management to implement lightweight drag and drop features. However, be aware that this approach may not be best for mobile users if you do not go the extra mile to implement proper touch events. [Material React Table V2](https://www.material-react-table.com/docs/examples/column-ordering) is an example of a library that implements TanStack Table with only browser drag and drop events such as `onDragStart`, `onDragEnd`, `onDragEnter` and no other dependencies. Browse its source code to see how it is done.
+Whichever solution you choose, the table-side integration is the same: call `table.setColumnOrder` from your drop handler as shown [above](#reordering-columns).

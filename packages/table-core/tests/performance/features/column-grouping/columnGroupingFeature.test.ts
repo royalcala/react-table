@@ -19,7 +19,7 @@ type personKeys = keyof Person
 const features = {
   ...coreFeatures,
   columnGroupingFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 }
 
 type PersonColumn = ColumnDef<typeof features, Person, any>

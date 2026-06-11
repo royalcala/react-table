@@ -144,7 +144,6 @@ Use it as a temporary migration shortcut. Explicit feature registration is the p
 | Column Resizing | `columnResizingFeature` |
 | Column Grouping | `columnGroupingFeature` |
 | Column Faceting | `columnFacetingFeature` |
-| Global Faceting | `globalFacetingFeature` |
 
 ---
 
@@ -297,21 +296,23 @@ const table = useTable({
 
 ### Fine-grained Updates with `table.Subscribe`
 
-Use `table.Subscribe` in render functions or JSX when a specific subtree should track selected atoms.
+Use `table.Subscribe` in render functions or JSX when a specific subtree should track selected atoms. Pass the function as an explicit `children` prop; `table.Subscribe` reads `props.children`, and Vue JSX delivers element children as slots instead.
 
 ```tsx
-<table.Subscribe>
-  {(atoms) => {
+<table.Subscribe
+  children={(atoms) => {
     const pagination = atoms.pagination.get()
 
     return (
       <span>Page {pagination.pageIndex + 1}</span>
     )
   }}
-</table.Subscribe>
+/>
 ```
 
 ### Controlled State
+
+The v8-style `state` + `on[State]Change` controlled state patterns still work and remain convenient for simple integrations. For new v9 code, prefer owning state slices with external atoms (see [External Atoms](#external-atoms) below), which give you fine-grained subscriptions without mirroring state through Vue refs.
 
 When Vue refs own a state slice, expose the current value with getters and update the ref in the matching callback.
 
@@ -490,7 +491,7 @@ const table = useAppTable({
 })
 ```
 
-See the [Composable Tables Guide](./composable-tables.md) for full patterns.
+See the [Composable Tables Guide](./composable-tables) for full patterns.
 
 ---
 
@@ -516,7 +517,7 @@ const features = tableFeatures({
 })
 ```
 
-`columnSizingInfo` became `columnResizing`, and `onColumnSizingInfoChange` became `onColumnResizingChange`.
+`columnSizingInfo` became `columnResizing`, `setColumnSizingInfo()` became `setcolumnResizing()` (note the lowercase `c`, the current v9 spelling), and `onColumnSizingInfoChange` became `onColumnResizingChange`.
 
 ### Sorting API Renames
 
@@ -593,7 +594,7 @@ type Person = {
 ## Migration Checklist
 
 - [ ] Replace `useVueTable` with `useTable`.
-- [ ] Add `features: tableFeatures({ ... })`.
+- [ ] Define `features` using `tableFeatures()` (or use `stockFeatures`).
 - [ ] Move root `get*RowModel` options into `rowModels`.
 - [ ] Remove `getCoreRowModel`; the core row model is automatic.
 - [ ] Pass `sortFns`, `filterFns`, and `aggregationFns` to row model factories.

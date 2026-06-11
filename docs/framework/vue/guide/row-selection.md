@@ -7,6 +7,7 @@ title: Row Selection (Vue) Guide
 Want to skip to the implementation? Check out these Vue examples:
 
 - [Row Selection](../examples/row-selection)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -30,9 +31,9 @@ The row selection feature keeps track of which rows are selected and allows you 
 
 ### Access Row Selection State
 
-The table instance already manages the row selection state for you (though as seen down below, it may be more convenient to manage the row selection state in your own scope). You can access the internal row selection state or the selected rows from a few APIs.
+The table instance already manages the row selection state for you. You can access the row selection state or the selected rows from a few APIs.
 
-- `table.atoms.rowSelection.get()` - returns the current row selection state
+- `table.atoms.rowSelection.get()` - returns the current row selection state (reactive inside templates, `computed(...)`, `watch(...)`, and `table.Subscribe`; a plain snapshot elsewhere)
 - `getSelectedRowModel()` - returns selected rows
 - `getFilteredSelectedRowModel()` - returns selected rows after filtering
 - `getGroupedSelectedRowModel()` - returns selected rows after grouping and sorting
@@ -48,15 +49,33 @@ console.log(table.getGroupedSelectedRowModel().rows) //get grouped client-side s
 
 ### Manage Row Selection State
 
-Even though the table instance will already manage the row selection state for you, it is usually more convenient to manage the state yourself in order to have easy access to the selected row ids that you can use to make API calls or other actions.
-
-Use the `onRowSelectionChange` table option to hoist up the row selection state to your own scope. Then pass the row selection state back to the table instance using in the `state` table option.
+If you need easy access to the selected row ids in other parts of your application (for example, to make API calls with them), you can own the row selection state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the selection value can be read anywhere in your app without depending on the table instance.
 
 ```ts
+import { createAtom, useSelector } from '@tanstack/vue-store'
 import { useTable, tableFeatures, rowSelectionFeature } from '@tanstack/vue-table'
+import type { RowSelectionState } from '@tanstack/vue-table'
 
 const features = tableFeatures({ rowSelectionFeature })
 
+const rowSelectionAtom = createAtom<RowSelectionState>({})
+
+// subscribe to the atom wherever you need the value
+const rowSelection = useSelector(rowSelectionAtom) // a Vue ref
+
+const table = useTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    rowSelection: rowSelectionAtom, // selection APIs now update rowSelectionAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.rowSelection` plus `onRowSelectionChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 const rowSelection = ref<RowSelectionState>({})
 
 const table = useTable({
@@ -68,9 +87,7 @@ const table = useTable({
   },
   state: {
     get rowSelection() {
-
       return rowSelection.value
-
     },
   },
 })

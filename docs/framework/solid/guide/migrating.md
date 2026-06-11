@@ -150,7 +150,6 @@ Use it as a migration shortcut, not as the preferred production end state.
 | Column Resizing | `columnResizingFeature` |
 | Column Grouping | `columnGroupingFeature` |
 | Column Faceting | `columnFacetingFeature` |
-| Global Faceting | `globalFacetingFeature` |
 
 ---
 
@@ -283,23 +282,19 @@ Atom reads can also be used directly in JSX:
 
 ### Fine-grained Updates with `table.Subscribe`
 
-`table.Subscribe` creates a Solid tracking boundary. Read the atoms needed by that block inside the child function.
+`table.Subscribe` passes `table.atoms` to its child function. As with any Solid component, the child function body runs once and is untracked, so read atoms inside JSX expressions (or thunks called from JSX) for Solid to track them.
 
 ```tsx
 <table.Subscribe>
-  {(atoms) => {
-    const pagination = atoms.pagination.get()
-
-    return (
-      <span>Page {pagination.pageIndex + 1}</span>
-    )
-  }}
+  {(atoms) => (
+    <span>Page {atoms.pagination.get().pageIndex + 1}</span>
+  )}
 </table.Subscribe>
 ```
 
 ### Controlled State
 
-Use getters in `state` so Solid tracks the current signal values.
+The v8-style `state` + `on[State]Change` controlled state patterns still work and remain convenient for simple integrations. For new v9 code, prefer owning state slices with external atoms (see [External Atoms](#external-atoms) below), which give you fine-grained subscriptions without mirroring state through signals. If you do control state with signals, use getters in `state` so Solid tracks the current signal values.
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -471,7 +466,7 @@ const table = createAppTable({
 })
 ```
 
-See the [Composable Tables Guide](./composable-tables.md) for complete patterns.
+See the [Composable Tables Guide](./composable-tables) for complete patterns.
 
 ---
 
@@ -497,7 +492,7 @@ const features = tableFeatures({
 })
 ```
 
-`columnSizingInfo` became `columnResizing`, and `onColumnSizingInfoChange` became `onColumnResizingChange`.
+`columnSizingInfo` became `columnResizing`, and `onColumnSizingInfoChange` became `onColumnResizingChange`. The `setColumnSizingInfo()` API became `setcolumnResizing()` (note the lowercase `c`, the current v9 spelling).
 
 ### Sorting API Renames
 
@@ -574,7 +569,7 @@ type Person = {
 ## Migration Checklist
 
 - [ ] Replace `createSolidTable` with `createTable`.
-- [ ] Add `features: tableFeatures({ ... })`.
+- [ ] Define `features` using `tableFeatures()` (or use `stockFeatures`).
 - [ ] Move every `get*RowModel` option into `rowModels`.
 - [ ] Remove `getCoreRowModel`; the core row model is automatic.
 - [ ] Pass `sortFns`, `filterFns`, and `aggregationFns` to row model factories.

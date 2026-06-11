@@ -7,6 +7,7 @@ title: Row Selection (Lit) Guide
 Want to skip to the implementation? Check out these Lit examples:
 
 - [Row Selection](../examples/row-selection)
+
 ### Lit Setup
 
 ```ts
@@ -42,33 +43,53 @@ The row selection feature keeps track of which rows are selected and allows you 
 
 ### Access Row Selection State
 
-The table instance already manages the row selection state for you (though as seen down below, it may be more convenient to manage the row selection state in your own scope). You can access the internal row selection state or the selected rows from a few APIs.
+The table instance already manages the row selection state for you. You can access the row selection state or the selected rows from a few APIs.
 
-- `table.atoms.rowSelection.get()` - returns the current row selection state
+- `table.state.rowSelection` - returns the row selection state (selected by the selector passed to `tableController.table`)
 - `getSelectedRowModel()` - returns selected rows
 - `getFilteredSelectedRowModel()` - returns selected rows after filtering
 - `getGroupedSelectedRowModel()` - returns selected rows after grouping and sorting
 
 ```ts
-console.log(table.atoms.rowSelection.get()) //get the row selection state - { 1: true, 2: false, etc... }
+console.log(table.state.rowSelection) //get the row selection state - { 1: true, 2: false, etc... }
 console.log(table.getSelectedRowModel().rows) //get full client-side selected rows
 console.log(table.getFilteredSelectedRowModel().rows) //get filtered client-side selected rows
 console.log(table.getGroupedSelectedRowModel().rows) //get grouped client-side selected rows
 ```
 
+In event handlers or other non-render code, you can also read the current snapshot with `table.atoms.rowSelection.get()`. In your `render` method, prefer `table.state.rowSelection` (or `table.Subscribe`), since the `TableController` keeps the host updated through the table store subscription.
+
 > Note: If you are using `manualPagination`, be aware that the `getSelectedRowModel` API will only return selected rows on the current page because table row models can only generate rows based on the `data` that is passed in. Row selection state, however, can contain row ids that are not present in the `data` array just fine.
 
 ### Manage Row Selection State
 
-Even though the table instance will already manage the row selection state for you, it is usually more convenient to manage the state yourself in order to have easy access to the selected row ids that you can use to make API calls or other actions.
-
-Use the `onRowSelectionChange` table option to hoist up the row selection state to your own scope. Then pass the row selection state back to the table instance using in the `state` table option.
+If you need easy access to the selected row ids in other parts of your application (for example, to make API calls with them), you can own the row selection state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the selection value can be read or subscribed to from any module without going through the component that owns the table.
 
 ```ts
+import { createAtom } from '@tanstack/store'
 import { TableController, tableFeatures, rowSelectionFeature } from '@tanstack/lit-table'
+import type { RowSelectionState } from '@tanstack/lit-table'
 
 const features = tableFeatures({ rowSelectionFeature })
 
+// create a stable atom at module scope (or in a shared store module)
+const rowSelectionAtom = createAtom<RowSelectionState>({})
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    rowSelection: rowSelectionAtom, // selection APIs now update rowSelectionAtom
+  },
+})
+
+// read rowSelectionAtom.get() (or subscribe to rowSelectionAtom) wherever you need the value
+```
+
+Alternatively, the v8-style `state.rowSelection` plus `onRowSelectionChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 @state()
 private rowSelection: RowSelectionState = {}
 

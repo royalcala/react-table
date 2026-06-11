@@ -44,6 +44,35 @@ npm install @tanstack/react-virtual
 ```
 
 The React examples use `useVirtualizer` from `@tanstack/react-virtual`. TanStack Table still owns rows, columns, headers, cells, sizing, sorting, filtering, and other table state; TanStack Virtual decides which item indexes should render for the current scroll position.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with `useTable`; nothing about virtualization changes the table setup.
+
+```tsx
+import {
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+  useTable,
+} from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+const table = useTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  data,
+})
+```
+
 ### The Basic Pattern
 
 Most virtualized table implementations follow the same pattern:

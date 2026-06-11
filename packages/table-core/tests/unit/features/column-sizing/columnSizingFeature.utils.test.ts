@@ -10,7 +10,7 @@ import { storeReactivityBindings } from '../../../../src/store-reactivity-bindin
 const features = {
   ...coreFeatures,
   columnSizingFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 }
 
 type Item = { id: string; a: string; b: string; c: string; d: string }

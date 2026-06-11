@@ -21,7 +21,7 @@ function Component() {
 }
 ```
 
-In v9, row models are configured via the `rowModels` option. The core row model is always included automatically. You only add the row models you need for filtering, sorting, pagination, etc. This keeps your bundle small—you only import and use the code for the features you enable.
+In v9, row models are configured via the `rowModels` option. The core row model is always included automatically. You only add the row models you need for filtering, sorting, pagination, etc. This keeps your bundle small, since you only import and use the code for the features you enable.
 
 ### What are Row Models?
 
@@ -33,7 +33,7 @@ You should only add the row models that you need. Here are all of the row models
 
 | `rowModels` Key | Factory Function | Purpose |
 |------------------|------------------|---------|
-| (automatic) | — | Core row model (always included) |
+| (automatic) | (none) | Core row model (always included) |
 | `filteredRowModel` | `createFilteredRowModel(filterFns)` | Filtering (column + global) |
 | `sortedRowModel` | `createSortedRowModel(sortFns)` | Sorting |
 | `paginatedRowModel` | `createPaginatedRowModel()` | Pagination |
@@ -77,11 +77,11 @@ const table = useTable({
 })
 ```
 
-Note that `createFilteredRowModel`, `createSortedRowModel`, and `createGroupedRowModel` accept their processing functions (`filterFns`, `sortFns`, `aggregationFns`) as parameters. This enables tree-shaking—if you use a custom filter, you don't pay for built-in filters you never use.
+Note that `createFilteredRowModel`, `createSortedRowModel`, and `createGroupedRowModel` accept their processing functions (`filterFns`, `sortFns`, `aggregationFns`) as parameters. This enables tree-shaking. If you use a custom filter, you don't pay for built-in filters you never use.
 
 ### Customize/Fork Row Models
 
-You don't have to use the exact row models that are provided by TanStack Table. If you need some advanced customization for certain row models, feel free to copy the [source code](https://github.com/TanStack/table/tree/main/packages/table-core/src/utils) for the row model you want to customize and modify it to your needs.
+You don't have to use the exact row models that are provided by TanStack Table. If you need some advanced customization for certain row models, feel free to copy the [source code](https://github.com/TanStack/table/tree/beta/packages/table-core/src/features) for the row model you want to customize and modify it to your needs. Each row model factory lives alongside its feature (e.g. `row-sorting/createSortedRowModel.ts`), and the core row model lives in [`core/row-models`](https://github.com/TanStack/table/tree/beta/packages/table-core/src/core/row-models).
 
 ### Using Row Models
 

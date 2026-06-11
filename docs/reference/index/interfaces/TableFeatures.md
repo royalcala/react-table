@@ -167,17 +167,17 @@ Defined in: [core/coreFeatures.ts:13](https://github.com/TanStack/table/blob/mai
 
 ***
 
-### coreReativityFeature?
+### coreReactivityFeature?
 
 ```ts
-optional coreReativityFeature: TableReactivityBindings;
+optional coreReactivityFeature: TableReactivityBindings;
 ```
 
 Defined in: [core/coreFeatures.ts:10](https://github.com/TanStack/table/blob/main/packages/table-core/src/core/coreFeatures.ts#L10)
 
 #### Inherited from
 
-[`CoreFeatures`](CoreFeatures.md).[`coreReativityFeature`](CoreFeatures.md#corereativityfeature)
+[`CoreFeatures`](CoreFeatures.md).[`coreReactivityFeature`](CoreFeatures.md#corereactivityfeature)
 
 ***
 

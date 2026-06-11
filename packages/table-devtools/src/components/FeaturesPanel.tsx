@@ -15,7 +15,7 @@ function toFnBuckets(value: unknown): FnBuckets {
   return typeof value === 'object' && value != null ? value : {}
 }
 
-const CORE_REACTIVITY_FEATURE_NAME = 'coreReativityFeature'
+const CORE_REACTIVITY_FEATURE_NAME = 'coreReactivityFeature'
 
 const CORE_FEATURE_NAMES: Array<string> = [
   CORE_REACTIVITY_FEATURE_NAME,

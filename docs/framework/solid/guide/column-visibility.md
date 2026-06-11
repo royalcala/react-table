@@ -7,6 +7,7 @@ title: Column Visibility (Solid) Guide
 Want to skip to the implementation? Check out these Solid examples:
 
 - [Column Visibility](../examples/column-visibility)
+
 Use getters for reactive inputs such as `data` when passing Solid signals to `createTable`.
 
 ### Solid Setup
@@ -21,7 +22,7 @@ const table = createTable({
   rowModels: {},
   columns,
   get data() {
-    return data
+    return data()
   },
 })
 ```
@@ -34,21 +35,52 @@ The column visibility feature allows table columns to be hidden or shown dynamic
 
 The `columnVisibility` state is a map of column IDs to boolean values. A column will be hidden if its ID is present in the map and the value is `false`. If the column ID is not present in the map, or the value is `true`, the column will be shown.
 
-```tsx
-import { createTable, tableFeatures, columnVisibilityFeature } from '@tanstack/solid-table'
+If you need to own the `columnVisibility` state yourself (for example, to persist user preferences), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the visibility state without going through the component that owns the table.
 
-const [columnVisibility, setColumnVisibility] = createSignal({
+```tsx
+import { createAtom, useSelector } from '@tanstack/solid-store'
+import { createTable, tableFeatures, columnVisibilityFeature } from '@tanstack/solid-table'
+import type { ColumnVisibilityState } from '@tanstack/solid-table'
+
+const features = tableFeatures({ columnVisibilityFeature })
+
+const columnVisibilityAtom = createAtom<ColumnVisibilityState>({
+  columnId1: true,
+  columnId2: false, // hide this column by default
+  columnId3: true,
+})
+
+const columnVisibility = useSelector(columnVisibilityAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnVisibility: columnVisibilityAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnVisibility` plus `onColumnVisibilityChange` pattern is still supported with Solid signals. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
+const features = tableFeatures({ columnVisibilityFeature })
+
+const [columnVisibility, setColumnVisibility] = createSignal<ColumnVisibilityState>({
   columnId1: true,
   columnId2: false, // hide this column by default
   columnId3: true,
 })
 
 const table = createTable({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   state: {
-    columnVisibility,
+    get columnVisibility() {
+      return columnVisibility() // connect the signal back down to the table
+    },
     //...
   },
   onColumnVisibilityChange: setColumnVisibility,
@@ -57,11 +89,13 @@ const table = createTable({
 
 Alternatively, if you don't need to manage the column visibility state outside of the table, you can still set the initial default column visibility state using the `initialState` option.
 
-> **Note**: If `columnVisibility` is provided to both `initialState` and `state`, the `state` initialization will take precedence and `initialState` will be ignored. Do not provide `columnVisibility` to both `initialState` and `state`, only one or the other.
+> **Note**: If `columnVisibility` is provided to both `initialState` and a controlled option (`atoms` or `state`), the controlled value will take precedence and `initialState` will be ignored. Only provide `columnVisibility` in one place.
 
 ```tsx
+const features = tableFeatures({ columnVisibilityFeature })
+
 const table = createTable({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -88,7 +122,7 @@ const columns = [
   },
   {
     header: 'Name',
-    accessor: 'name', // can be hidden
+    accessorKey: 'name', // can be hidden
   },
 ];
 ```

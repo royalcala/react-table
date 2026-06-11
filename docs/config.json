@@ -9,17 +9,15 @@
     {
       "label": "Getting Started",
       "children": [
-        { "label": "Introduction", "to": "introduction" },
         { "label": "Overview", "to": "overview" },
         { "label": "Installation", "to": "installation" },
-        { "label": "Devtools", "to": "devtools" },
-        { "label": "FAQ", "to": "faq" }
+        { "label": "Devtools", "to": "devtools" }
       ],
       "frameworks": [
         {
           "label": "angular",
           "children": [
-            { "label": "Angular Table Adapter", "to": "framework/angular/angular-table" },
+            { "label": "Quick Start", "to": "framework/angular/quick-start" },
             { "label": "Migrating to V9", "to": "framework/angular/guide/migrating" },
             { "label": "Rendering components", "to": "framework/angular/guide/rendering" }
           ]
@@ -27,14 +25,14 @@
         {
           "label": "lit",
           "children": [
-            { "label": "Lit Table Adapter", "to": "framework/lit/lit-table" },
+            { "label": "Quick Start", "to": "framework/lit/quick-start" },
             { "label": "Migrating to V9", "to": "framework/lit/guide/migrating" }
           ]
         },
         {
           "label": "react",
           "children": [
-            { "label": "React Table Adapter", "to": "framework/react/react-table" },
+            { "label": "Quick Start", "to": "framework/react/quick-start" },
             { "label": "Migrating to V9", "to": "framework/react/guide/migrating" },
             { "label": "useLegacyTable Guide", "to": "framework/react/guide/use-legacy-table" }
           ]
@@ -42,28 +40,28 @@
         {
           "label": "preact",
           "children": [
-            { "label": "Preact Table Adapter", "to": "framework/preact/preact-table" },
+            { "label": "Quick Start", "to": "framework/preact/quick-start" },
             { "label": "Migrating to V9", "to": "framework/preact/guide/migrating" }
           ]
         },
         {
           "label": "solid",
           "children": [
-            { "label": "Solid Table Adapter", "to": "framework/solid/solid-table" },
+            { "label": "Quick Start", "to": "framework/solid/quick-start" },
             { "label": "Migrating to V9", "to": "framework/solid/guide/migrating" }
           ]
         },
         {
           "label": "svelte",
           "children": [
-            { "label": "Svelte Table Adapter", "to": "framework/svelte/svelte-table" },
+            { "label": "Quick Start", "to": "framework/svelte/quick-start" },
             { "label": "Migrating to V9", "to": "framework/svelte/guide/migrating" }
           ]
         },
         {
           "label": "vue",
           "children": [
-            { "label": "Vue Table Adapter", "to": "framework/vue/vue-table" },
+            { "label": "Quick Start", "to": "framework/vue/quick-start" },
             { "label": "Migrating to V9", "to": "framework/vue/guide/migrating" }
           ]
         },
@@ -161,8 +159,7 @@
             { "label": "Column Filtering", "to": "framework/angular/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/angular/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/angular/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/angular/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/angular/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/angular/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/angular/guide/grouping" },
             { "label": "Expanding", "to": "framework/angular/guide/expanding" },
             { "label": "Pagination", "to": "framework/angular/guide/pagination" },
@@ -184,8 +181,7 @@
             { "label": "Column Filtering", "to": "framework/lit/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/lit/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/lit/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/lit/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/lit/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/lit/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/lit/guide/grouping" },
             { "label": "Expanding", "to": "framework/lit/guide/expanding" },
             { "label": "Pagination", "to": "framework/lit/guide/pagination" },
@@ -207,8 +203,7 @@
             { "label": "Column Filtering", "to": "framework/react/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/react/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/react/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/react/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/react/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/react/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/react/guide/grouping" },
             { "label": "Expanding", "to": "framework/react/guide/expanding" },
             { "label": "Pagination", "to": "framework/react/guide/pagination" },
@@ -230,8 +225,7 @@
             { "label": "Column Filtering", "to": "framework/preact/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/preact/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/preact/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/preact/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/preact/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/preact/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/preact/guide/grouping" },
             { "label": "Expanding", "to": "framework/preact/guide/expanding" },
             { "label": "Pagination", "to": "framework/preact/guide/pagination" },
@@ -253,8 +247,7 @@
             { "label": "Column Filtering", "to": "framework/solid/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/solid/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/solid/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/solid/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/solid/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/solid/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/solid/guide/grouping" },
             { "label": "Expanding", "to": "framework/solid/guide/expanding" },
             { "label": "Pagination", "to": "framework/solid/guide/pagination" },
@@ -276,8 +269,7 @@
             { "label": "Column Filtering", "to": "framework/svelte/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/svelte/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/svelte/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/svelte/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/svelte/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/svelte/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/svelte/guide/grouping" },
             { "label": "Expanding", "to": "framework/svelte/guide/expanding" },
             { "label": "Pagination", "to": "framework/svelte/guide/pagination" },
@@ -299,8 +291,7 @@
             { "label": "Column Filtering", "to": "framework/vue/guide/column-filtering" },
             { "label": "Global Filtering", "to": "framework/vue/guide/global-filtering" },
             { "label": "Fuzzy Filtering", "to": "framework/vue/guide/fuzzy-filtering" },
-            { "label": "Column Faceting", "to": "framework/vue/guide/column-faceting" },
-            { "label": "Global Faceting", "to": "framework/vue/guide/global-faceting" },
+            { "label": "Faceting", "to": "framework/vue/guide/column-faceting" },
             { "label": "Grouping", "to": "framework/vue/guide/grouping" },
             { "label": "Expanding", "to": "framework/vue/guide/expanding" },
             { "label": "Pagination", "to": "framework/vue/guide/pagination" },

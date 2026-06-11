@@ -189,14 +189,18 @@ type Sales = [Date, number]
 You could extract the `number` value like so:
 
 ```tsx
-columnHelper.accessor(1)
+columnHelper.accessor(row => row[1], {
+  id: 'amount',
+})
 
 // OR
 
 {
-  accessorKey: 1,
+  accessorKey: '1', // string array index
 }
 ```
+
+> Note: When using `accessorKey` with array data, the key must be a string (e.g. `'1'`, not the number `1`).
 
 ## Accessor Functions
 

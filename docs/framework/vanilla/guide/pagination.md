@@ -16,7 +16,7 @@ Vanilla examples use the core table package directly with store reactivity bindi
 import { constructTable, tableFeatures, rowPaginationFeature, createPaginatedRowModel } from '@tanstack/table-core'
 import { storeReactivityBindings } from '@tanstack/table-core/store-reactivity-bindings'
 
-const features = tableFeatures({ rowPaginationFeature, coreReativityFeature: storeReactivityBindings() })
+const features = tableFeatures({ rowPaginationFeature, coreReactivityFeature: storeReactivityBindings() })
 
 const table = constructTable({
   features,

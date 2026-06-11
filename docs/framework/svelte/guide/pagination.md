@@ -41,7 +41,7 @@ Using client-side pagination means that the `data` that you fetch will contain *
 
 Client-side pagination is usually the simplest way to implement pagination when using TanStack Table, but it might not be practical for very large datasets.
 
-However, a lot of people underestimate just how much data can be handled client-side. If your table will only ever have a few thousand rows or less, client-side pagination can still be a viable option. TanStack Table is designed to scale up to 10s of thousands of rows with decent performance for pagination, filtering, sorting, and grouping. The [official pagination example](../examples/pagination) loads 100,000 rows and still performs well, albeit with only handful of columns.
+However, a lot of people underestimate just how much data can be handled client-side. If your table will only ever have a few thousand rows or less, client-side pagination can still be a viable option. TanStack Table is designed to scale up to 10s of thousands of rows with decent performance for pagination, filtering, sorting, and grouping. The [official pagination example](../examples/pagination) loads 1,000 rows by default and includes a 200,000 row stress-test button that still performs well, albeit with only a handful of columns.
 
 Every use-case is different and will depend on the complexity of the table, how many columns you have, how large every piece of data is, etc. The main bottlenecks to pay attention to are:
 
@@ -120,18 +120,49 @@ The `pagination` state is an object that contains the following properties:
 - `pageIndex`: The current page index (zero-based).
 - `pageSize`: The current page size.
 
-You can manage the `pagination` state just like any other state in the table instance.
+For reactive reads that should update your UI, use `table.state.pagination` (selected by the `createTable` selector). In event handlers, you can read the current snapshot with `table.atoms.pagination.get()`, but this read only participates in Svelte dependency tracking when called in a rune-tracked context.
+
+If you need access to the `pagination` state outside of the table (a server-side query key is the most common case), you can own the slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the pagination value can be used elsewhere (such as in a query key) without coupling that code to the table instance.
 
 ```ts
+import { createAtom, useSelector } from '@tanstack/svelte-store'
 import {
   createTable,
-  createTableState,
   tableFeatures,
   rowPaginationFeature,
   createPaginatedRowModel,
 } from '@tanstack/svelte-table'
+import type { PaginationState } from '@tanstack/svelte-table'
 
 const features = tableFeatures({ rowPaginationFeature })
+
+const paginationAtom = createAtom<PaginationState>({
+  pageIndex: 0, // initial page index
+  pageSize: 10, // default page size
+})
+
+// subscribe to the atom wherever you need the value (e.g. for a query key)
+const pagination = useSelector(paginationAtom) // read it reactively with pagination.current
+
+const table = createTable({
+  features,
+  rowModels: {
+    paginatedRowModel: createPaginatedRowModel(),
+  },
+  columns,
+  get data() {
+    return data
+  },
+  atoms: {
+    pagination: paginationAtom, // table pagination APIs now update paginationAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.pagination` plus `onPaginationChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+import { createTableState } from '@tanstack/svelte-table'
 
 const [pagination, setPagination] = createTableState<PaginationState>({
   pageIndex: 0, // initial page index
@@ -144,7 +175,9 @@ const table = createTable({
     paginatedRowModel: createPaginatedRowModel(),
   },
   columns,
-  data,
+  get data() {
+    return data
+  },
   onPaginationChange: setPagination,
   state: {
     get pagination() {
@@ -173,7 +206,7 @@ const table = createTable({
 })
 ```
 
-> **Note**: Do NOT pass the `pagination` state to both the `state` and `initialState` options. `state` will overwrite `initialState`. Only use one or the other.
+> **Note**: Do NOT provide the `pagination` slice in more than one of the `atoms`, `state`, and `initialState` options. Controlled values (`atoms` or `state`) will overwrite `initialState`. Only use one of them.
 
 ### Pagination Options
 
@@ -181,7 +214,7 @@ Besides the `manualPagination`, `pageCount`, and `rowCount` options which are us
 
 #### Auto Reset Page Index
 
-By default, `pageIndex` is reset to `0` when page-altering state changes occur, such as when the `data` is updated, filters change, grouping changes, etc. This behavior is automatically disabled when `manualPagination` is true but it can be overridden by explicitly assigning a boolean value to the `autoResetPageIndex` table option.
+By default, `pageIndex` is reset to `0` whenever the client-side row models recompute, such as when the `data` is updated, filters change, sorting changes, or grouping changes. This behavior is automatically disabled when `manualPagination` is `true`, but it can be overridden by explicitly assigning a boolean value to the `autoResetPageIndex` table option. There is also a global `autoResetAll` table option that disables (or enables) every auto-reset behavior at once.
 
 ```ts
 const table = createTable({
@@ -192,8 +225,11 @@ const table = createTable({
   columns,
   data,
   autoResetPageIndex: false, // turn off auto reset of pageIndex
+  // autoResetAll: false, // or turn off all auto resets at once
 })
 ```
+
+A common reason to set `autoResetPageIndex: false` is editing data while viewing the table (for example, inline cell editing). Every edit updates `data`, which recomputes the row models and would otherwise snap the user back to the first page. Setting the option to a static `false` keeps the current page when the row model recomputes. If you also use the expanding feature, pair it with `autoResetExpanded: false` so expanded rows do not collapse on edits.
 
 Be aware, however, that if you turn off `autoResetPageIndex`, you may need to add some logic to handle resetting the `pageIndex` yourself to avoid showing empty pages.
 

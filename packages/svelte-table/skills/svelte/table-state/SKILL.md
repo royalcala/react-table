@@ -48,7 +48,7 @@ A table instance has three (and a half) state surfaces:
 - `table.state` — the value returned by the optional selector passed as the second argument to
   `createTable`. **Svelte-only surface.**
 
-The Svelte adapter installs `svelteReactivity()` as the `coreReativityFeature`:
+The Svelte adapter installs `svelteReactivity()` as the `coreReactivityFeature`:
 
 | Core concept  | Svelte binding  |
 | ------------- | --------------- |

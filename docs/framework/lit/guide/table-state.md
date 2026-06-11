@@ -34,7 +34,7 @@ A table instance has a few state surfaces:
 - `table.store` is a readonly flat TanStack Store derived by putting all of the registered `table.atoms` together.
 - `table.state` is Lit-only selected state. It is the value returned from the selector passed as the second argument to `tableController.table(...)`.
 
-The Lit adapter provides `litReactivity()` to the table's `coreReativityFeature`. Readonly and writable atoms are TanStack Store atoms. `TableController` subscribes to `table.store` and `table.optionsStore`; atom or options changes flowing through those stores call `host.requestUpdate()`.
+The Lit adapter provides `litReactivity()` to the table's `coreReactivityFeature`. Readonly and writable atoms are TanStack Store atoms. `TableController` subscribes to `table.store` and `table.optionsStore`; atom or options changes flowing through those stores call `host.requestUpdate()`.
 
 ### Feature-based State
 

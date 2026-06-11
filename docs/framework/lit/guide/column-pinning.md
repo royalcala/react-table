@@ -9,6 +9,7 @@ Want to skip to the implementation? Check out these Lit examples:
 - [Column Pinning](../examples/column-pinning)
 - [Column Pinning Split](../examples/column-pinning-split)
 - [Sticky Column Pinning](../examples/column-pinning-sticky)
+
 ### Lit Setup
 
 ```ts
@@ -56,11 +57,37 @@ The only way to change the order of the pinned columns is in the `columnPinning.
 
 Managing the `columnPinning` state is optional, and usually not necessary unless you are adding persistent state features. TanStack Table will already keep track of the column pinning state for you. Manage the `columnPinning` state just like any other table state if you need to.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without going through the component that owns the table.
+
 ```ts
+import { createAtom } from '@tanstack/store'
 import { TableController, tableFeatures, columnPinningFeature } from '@tanstack/lit-table'
+import type { ColumnPinningState } from '@tanstack/lit-table'
 
 const features = tableFeatures({ columnPinningFeature })
 
+// create a stable atom at module scope (or in a shared store module)
+const columnPinningAtom = createAtom<ColumnPinningState>({
+  left: [],
+  right: [],
+})
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnPinning: columnPinningAtom,
+  },
+  //...
+})
+
+// read columnPinningAtom.get() (or subscribe to columnPinningAtom) wherever you need the value
+```
+
+Alternatively, the v8-style `state.columnPinning` plus `onColumnPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 @state()
 private columnPinning: ColumnPinningState = {
   left: [],
@@ -123,7 +150,7 @@ Use `table.setColumnPinning` to update the pinning state directly. Use `table.re
 table.setColumnPinning({
   left: ['firstName'],
   right: ['actions'],
-}
+})
 
 table.resetColumnPinning()
 table.resetColumnPinning(true)

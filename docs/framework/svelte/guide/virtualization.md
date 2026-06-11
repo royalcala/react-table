@@ -15,7 +15,7 @@ Use getters for reactive inputs such as `data` when passing Svelte state to `cre
 ### Svelte Setup
 
 Install and import the Svelte virtualizer adapter from `@tanstack/svelte-virtual`. TanStack Table still owns rows, columns, and table state; the virtualizer owns scroll indexes and measurements.
-Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table).
+Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/svelte/examples/table).
 
 ## Virtualization (Svelte) Guide
 
@@ -44,6 +44,37 @@ npm install @tanstack/svelte-virtual
 ```
 
 The Svelte examples use `createVirtualizer` from `@tanstack/svelte-virtual`. TanStack Table still owns rows, columns, headers, cells, sizing, sorting, filtering, and other table state; TanStack Virtual decides which item indexes should render for the current scroll position.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with `createTable`; nothing about virtualization changes the table setup.
+
+```ts
+import {
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+  createTable,
+} from '@tanstack/svelte-table'
+import { createVirtualizer } from '@tanstack/svelte-virtual'
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+const table = createTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  get data() {
+    return data
+  },
+})
+```
+
 ### The Basic Pattern
 
 Most virtualized table implementations follow the same pattern:
@@ -58,15 +89,25 @@ Most virtualized table implementations follow the same pattern:
 Here is a compact row virtualization example:
 
 ```ts
-const rows = table.getRowModel().rows
+import { get } from 'svelte/store'
+
+let tableContainerRef = $state<HTMLDivElement | undefined>(undefined)
+
+const rows = $derived(table.getRowModel().rows)
 
 const rowVirtualizer = createVirtualizer({
   get count() {
     return rows.length
   },
-  getScrollElement: () => tableContainerRef,
+  getScrollElement: () => tableContainerRef ?? null,
   estimateSize: () => 33,
   overscan: 5,
+})
+
+// The svelte-virtual store adapter does not reactively track getter options,
+// so push count changes (data refresh, filtering, expansion) to the virtualizer.
+$effect(() => {
+  get(rowVirtualizer).setOptions({ count: rows.length })
 })
 ```
 
@@ -94,7 +135,7 @@ The [virtualized rows examples](../examples/virtualized-rows) show how to render
 The core idea is that sorting, filtering, grouping, and other row-model work still comes from TanStack Table. The virtualizer reads from the final table row model:
 
 ```ts
-const rows = table.getRowModel().rows
+const rows = $derived(table.getRowModel().rows)
 ```
 
 The row virtualizer is configured with `count: rows.length`, a row height estimate, the scroll container, and an overscan value. The `tbody` is given the full virtual height with `rowVirtualizer.getTotalSize()`, while each rendered row is absolutely positioned with `transform: translateY(...)`.
@@ -110,30 +151,45 @@ The [virtualized columns examples](../examples/virtualized-columns) show how to 
 Column virtualization uses the current visible column list:
 
 ```ts
-const visibleColumns = table.getVisibleLeafColumns()
+const visibleColumns = $derived(table.getVisibleLeafColumns())
 ```
 
 The column virtualizer is configured for horizontal virtualization:
 
 ```ts
 const columnVirtualizer = createVirtualizer({
-  count: visibleColumns.length,
-  estimateSize: index => visibleColumns[index].getSize(),
-  getScrollElement: () => tableContainerRef.current,
+  get count() {
+    return visibleColumns.length
+  },
+  estimateSize: (index) => visibleColumns[index].getSize(),
+  getScrollElement: () => tableContainerRef ?? null,
   horizontal: true,
   overscan: 3,
+})
+
+// Keep the virtualizer's count in sync when column visibility changes.
+$effect(() => {
+  get(columnVirtualizer).setOptions({ count: visibleColumns.length })
 })
 ```
 
 Column virtualization uses a different rendering strategy than row virtualization. Instead of absolutely positioning columns, the examples add fake spacer cells to the left and right:
 
 ```ts
-const virtualColumns = columnVirtualizer.getVirtualItems()
-const virtualPaddingLeft = virtualColumns[0]?.start ?? 0
-const virtualPaddingRight =
-  columnVirtualizer.getTotalSize() -
-  (virtualColumns[virtualColumns.length - 1]?.end ?? 0)
+const virtualPaddingLeft = $derived.by(() => {
+  const virtualColumns = $columnVirtualizer.getVirtualItems()
+  return virtualColumns[0]?.start ?? 0
+})
+const virtualPaddingRight = $derived.by(() => {
+  const virtualColumns = $columnVirtualizer.getVirtualItems()
+  return (
+    $columnVirtualizer.getTotalSize() -
+    (virtualColumns[virtualColumns.length - 1]?.end ?? 0)
+  )
+})
 ```
+
+`createVirtualizer` returns a Svelte store, so read it with the `$columnVirtualizer` auto-subscription (or `get(columnVirtualizer)` outside reactive contexts).
 
 Those spacer cells preserve the horizontal scroll width while the renderer only mounts the virtual columns. This approach keeps row rendering table-like and allows dynamic row height measurement to keep working.
 
@@ -199,7 +255,7 @@ function measureElement(node: HTMLTableRowElement) {
 >
 ```
 
-Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In non-React adapters, call `measureElement` through the adapter-appropriate ref, action, directive, or controller.
+Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In Svelte, the idiomatic mechanism is a [Svelte action](https://svelte.dev/docs/svelte/use) (`use:measureElement`) like the one above; this is exactly what the official [virtualized rows example](../examples/virtualized-rows) does. The example also skips dynamic measurement in Firefox, which measures table border heights differently.
 
 Overscan helps avoid blank regions while measurements settle. If every row has a known fixed height, skip dynamic measurement and use the fixed height estimate instead.
 

@@ -75,7 +75,7 @@ export function createTable<
 
   const mergedOptions = mergeProps(tableOptions, {
     features: {
-      coreReativityFeature: reactivity,
+      coreReactivityFeature: reactivity,
       ...tableOptions.features,
     },
   }) as any

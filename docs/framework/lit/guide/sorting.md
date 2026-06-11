@@ -7,6 +7,7 @@ title: Sorting (Lit) Guide
 Want to skip to the implementation? Check out these Lit examples:
 
 - [Sorting](../examples/sorting)
+- [Sorting Dynamic Data](../examples/sorting-dynamic-data)
 
 ### Lit Setup
 
@@ -59,31 +60,65 @@ Since the sorting state is an array, it is possible to sort by multiple columns 
 
 #### Accessing Sorting State
 
-You can access the sorting state directly from the table instance with `table.atoms.sorting.get()` or from the current `table.store.state` snapshot.
+For reads in your `render` method, use `table.state.sorting` (the state selected by the selector passed to `tableController.table`). The `TableController` subscribes the host to `table.store`, so the host updates whenever the sorting state changes. In event handlers or other non-render code, you can read the current snapshot with `table.atoms.sorting.get()`.
 
 ```ts
-const table = this.tableController.table({
-  features,
-  rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
-  columns,
-  data: this.data,
-  //...
-})
+const table = this.tableController.table(
+  {
+    features,
+    rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
+    columns,
+    data: this.data,
+    //...
+  },
+  (state) => ({ sorting: state.sorting }),
+)
 
-console.log(table.atoms.sorting.get()) // access the current sorting state
+table.state.sorting // selected state read in render
+table.atoms.sorting.get() // snapshot read in event handlers
 ```
 
-However, if you need to access the sorting state before the table is initialized, you can "control" the sorting state like down below.
+However, if you need access to the sorting state outside of the table, you can "control" the sorting state like down below.
 
 #### Controlled Sorting State
 
-If you need easy access to the sorting state, you can control/manage the sorting state in your own state management with the `state.sorting` and `onSortingChange` table options.
+If you need easy access to the sorting state in other parts of your application, you can own the sorting state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the sorting value can be read or subscribed to from any module (such as in a query key for server-side sorting) without going through the component that owns the table.
+
+```ts
+import { createAtom } from '@tanstack/store'
+import type { SortingState } from '@tanstack/lit-table'
+
+// create a stable atom at module scope (or in a shared store module)
+const sortingAtom = createAtom<SortingState>([]) // can set initial sorting state here
+
+@customElement('my-table')
+class MyTable extends LitElement {
+  private tableController = new TableController<typeof features, Person>(this)
+
+  protected render() {
+    const table = this.tableController.table({
+      features,
+      rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
+      columns,
+      data: this.data,
+      //...
+      atoms: {
+        sorting: sortingAtom, // table sorting APIs now update sortingAtom
+      },
+    })
+
+    const sorting = sortingAtom.get() // read the atom wherever you need the value
+
+    return html`...`
+  }
+}
+```
+
+Alternatively, the v8-style `state.sorting` plus `onSortingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 @state()
-private sorting: SortingState = [] // can set initial sorting state here
-//...
-// use sorting state to fetch data from your server or something...
+private sorting: SortingState = []
 //...
 const table = this.tableController.table({
   features,
@@ -133,23 +168,27 @@ Whether or not you should use client-side or server-side sorting depends entirel
 If you plan to just use your own server-side sorting in your back-end logic, you do not need to provide a sorted row model. But if you have provided a sorting row model, but you want to disable it, you can use the `manualSorting` table option.
 
 ```ts
-@state()
-private sorting: SortingState = []
+import { createAtom } from '@tanstack/store'
+
+const features = tableFeatures({ rowSortingFeature }) // feature needed for sorting state/APIs
+
+const sortingAtom = createAtom<SortingState>([])
 //...
 const table = this.tableController.table({
-  features: tableFeatures({ rowSortingFeature }), // feature needed for sorting state/APIs
+  features,
   rowModels: {}, // no sortedRowModel needed for manual sorting
   columns,
   data: this.data,
   manualSorting: true, // use pre-sorted row model instead of sorted row model
-  state: {
-    sorting: this.sorting,
-  },
-  onSortingChange: (updater) => {
-    this.sorting = typeof updater === 'function' ? updater(this.sorting) : updater
+  atoms: {
+    sorting: sortingAtom,
   },
 })
+
+// read sortingAtom.get() (or subscribe to sortingAtom) for your server-side query
 ```
+
+Hoisting the sorting state into your own scope (with an external atom or the `state.sorting` plus `onSortingChange` pattern) is covered in the [Controlled Sorting State](#controlled-sorting-state) section above.
 
 > **NOTE**: When `manualSorting` is set to `true`, the table will assume that the data that you provide is already sorted, and will not apply any sorting to it.
 
@@ -193,11 +232,11 @@ By default, there are 6 built-in sorting functions to choose from:
 - `datetime` - Sorts by time, use this if your values are `Date` objects.
 - `basic` - Sorts using a basic/standard `a > b ? 1 : a < b ? -1 : 0` comparison. This is the fastest sorting function, but may not be the most accurate.
 
-You can also define your own custom sorting functions either as the `sortFn` column option, or as a global sorting function using the `sortFns` table option.
+You can also define your own custom sorting functions, either inline as the `sortFn` column option, or by name in the sorting function registry that you pass to `createSortedRowModel`.
 
 #### Custom Sorting Functions
 
-When defining a custom sorting function in either the `sortFns` table option or as a `sortFn` column option, it should have the following signature:
+Whether you register a custom sorting function in the registry passed to `createSortedRowModel` or pass it directly as a `sortFn` column option, it should have the following signature:
 
 ```ts
 //optionally use the SortFn to infer the parameter types
@@ -206,7 +245,7 @@ const myCustomSortFn: SortFn<TFeatures, TData> = (rowA: Row<TFeatures, TData>, r
 }
 ```
 
-> Note: The comparison function does not need to take whether or not the column is in descending or ascending order into account. The row models will take of that logic. `sortFn` functions only need to provide a consistent comparison.
+> Note: The comparison function does not need to take whether or not the column is in descending or ascending order into account. The row models will take care of that logic. `sortFn` functions only need to provide a consistent comparison.
 
 Every sorting function receives 2 rows and a column ID and are expected to compare the two rows using the column ID to return `-1`, `0`, or `1` in ascending order. Here's a cheat sheet:
 
@@ -226,7 +265,7 @@ const columns = [
   {
     header: () => 'Age',
     accessorKey: 'age',
-    sortFn: 'myCustomSortFn', // use custom global sorting function
+    sortFn: 'myCustomSortFn', // reference a custom sorting function registered with createSortedRowModel
   },
   {
     header: () => 'Birthday',
@@ -260,6 +299,18 @@ const table = this.tableController.table({
   data: this.data,
 })
 ```
+
+> **TypeScript Note:** For `sortFn: 'myCustomSortFn'` string references to typecheck, augment the `SortFns` interface with a `declare module` block:
+>
+> ```ts
+> declare module '@tanstack/lit-table' {
+>   interface SortFns {
+>     myCustomSortFn: SortFn<typeof features, MyData>
+>   }
+> }
+> ```
+>
+> Alternatively, skip the registry and the augmentation entirely by passing the function directly to the `sortFn` column option.
 
 ### Customize Sorting
 
@@ -341,7 +392,7 @@ const columns = [
 
 Any undefined values will be sorted to the beginning or end of the list based on the `sortUndefined` column option or table option. You can customize this behavior for your specific use-case.
 
-In not specified, the default value for `sortUndefined` is `1`, and undefined values will be sorted with lower priority (descending), if ascending, undefined will appear on the end of the list.
+If not specified, the default value for `sortUndefined` is `1`, and undefined values will be sorted with lower priority (descending), if ascending, undefined will appear on the end of the list.
 
 - `'first'` - Undefined values will be pushed to the beginning of the list
 - `'last'` - Undefined values will be pushed to the end of the list
@@ -365,13 +416,13 @@ const columns = [
 
 By default, the ability to remove sorting while cycling through the sorting states for a column is enabled. You can disable this behavior using the `enableSortingRemoval` table option. This behavior is useful if you want to ensure that at least one column is always sorted.
 
-The default behavior when using either the `getToggleSortingHandler` or `toggleSorting` APIs is to cycle through the sorting states like this:
+The default behavior when using either the `getToggleSortingHandler` or `toggleSorting` APIs is to cycle through the sorting states like this (the first direction depends on the column's data type and the `sortDescFirst` option, as discussed [above](#sorting-direction); a string column is shown here):
 
-`'none' -> 'desc' -> 'asc' -> 'none' -> 'desc' -> 'asc' -> ...`
+`'none' -> 'asc' -> 'desc' -> 'none' -> 'asc' -> 'desc' -> ...`
 
-If you disable sorting removal, the behavior will be like this:
+If you disable sorting removal, the `'none'` state is skipped after the first sort:
 
-`'none' -> 'desc' -> 'asc' -> 'desc' -> 'asc' -> ...`
+`'none' -> 'asc' -> 'desc' -> 'asc' -> 'desc' -> ...`
 
 Once a column is sorted and `enableSortingRemoval` is `false`, toggling the sorting on that column will never remove the sorting. However, if the user sorts by another column and it is not a multi-sort event, then the sorting will be removed from the previous column and just applied to the new column.
 
@@ -383,7 +434,7 @@ const table = this.tableController.table({
   rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
   columns,
   data: this.data,
-  enableSortingRemoval: false, // disable the ability to remove sorting on columns (always none -> asc -> desc -> asc)
+  enableSortingRemoval: false, // disable the ability to remove sorting on columns (sorting can never return to 'none' once applied)
 })
 ```
 

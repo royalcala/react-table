@@ -11,7 +11,7 @@ function createTable(key?: string) {
   return constructTable({
     features: {
       ...coreFeatures,
-      coreReativityFeature: storeReactivityBindings(),
+      coreReactivityFeature: storeReactivityBindings(),
     },
     columns: [],
     data: [],

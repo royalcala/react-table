@@ -8,8 +8,8 @@ TanStack Table v9 is a major release that introduces significant architectural i
 
 ### 1. Tree-shaking
 
-- **Features are tree-shakeable**: Features are now treated as plugins—import only what you use. If your table only needs sorting, you won't ship filtering, pagination, or other feature code. Bundlers can eliminate unused code, so for smaller tables you can expect a meaningfully smaller bundle compared to v8. This also lets TanStack Table add features over time without bloating everyone's bundles.
-- **Row models and their functions are refactored**: Row model factories (`createFilteredRowModel`, `createSortedRowModel`, etc.) now accept their processing functions (`filterFns`, `sortFns`, `aggregationFns`) as parameters. This enables tree-shaking of the functions themselves—if you use a custom filter, you don't pay for built-in filters you never use.
+- **Features are tree-shakeable**: Features are now treated as plugins: import only what you use. If your table only needs sorting, you won't ship filtering, pagination, or other feature code. Bundlers can eliminate unused code, so for smaller tables you can expect a meaningfully smaller bundle compared to v8. This also lets TanStack Table add features over time without bloating everyone's bundles.
+- **Row models and their functions are refactored**: Row model factories (`createFilteredRowModel`, `createSortedRowModel`, etc.) now accept their processing functions (`filterFns`, `sortFns`, `aggregationFns`) as parameters. This enables tree-shaking of the functions themselves: if you use a custom filter, you don't pay for built-in filters you never use.
 
 ### 2. State Management
 
@@ -28,7 +28,7 @@ While v9 is a significant upgrade, **you don't have to adopt everything at once*
 - **Don't want to think about tree-shaking yet?** You can start with `stockFeatures` to include most commonly used features.
 - **Your table markup is largely unchanged.** How you render `<table>`, `<thead>`, `<tr>`, `<td>`, etc. remains the same.
 
-The main change is **how you define a table** with the Angular adapter — specifically the new `features` and `rowModels` options.
+The main change is **how you define a table** with the Angular adapter, specifically the new `features` and `rowModels` options.
 
 ## Core Breaking Changes
 
@@ -75,7 +75,7 @@ import {
   tableFeatures,
 } from '@tanstack/angular-table'
 
-const features = tableFeatures({}) // Empty = core feaFtures only
+const features = tableFeatures({}) // Empty = core features only
 
 // Define stable references outside the initializer
 const v9Table = injectTable(() => ({
@@ -161,7 +161,7 @@ Row models are the functions that process your data (filtering, sorting, paginat
 
 | v8 Option | v9 `rowModels` Key | v9 Factory Function |
 |-----------|---------------------|---------------------|
-| `getCoreRowModel()` | (automatic) | Not needed — always included |
+| `getCoreRowModel()` | (automatic) | Not needed, always included |
 | `getFilteredRowModel()` | `filteredRowModel` | `createFilteredRowModel(filterFns)` |
 | `getSortedRowModel()` | `sortedRowModel` | `createSortedRowModel(sortFns)` |
 | `getPaginationRowModel()` | `paginatedRowModel` | `createPaginatedRowModel()` |
@@ -266,7 +266,7 @@ const v9Table = injectTable(() => ({
 ### Accessing State
 
 In v8, you accessed state via `table.getState()`. In v9, read the specific
-state slice from `table.atoms.<slice>.get()` where possible. Use `table.state`
+state slice from `table.atoms.<slice>.get()` where possible. Use `table.store.get()`
 when you need the full flat state shape, such as debug JSON.
 
 ```ts
@@ -279,9 +279,9 @@ const { sorting, pagination } = v8
 const sorting = table.atoms.sorting.get()
 const pagination = table.atoms.pagination.get()
 
-// v9 - full-state flat proxy
-const fullState = table.state
-const v9 = table.state
+// v9 - full-state flat snapshot
+const fullState = table.store.get()
+const v9 = table.store.get()
 const { sorting: v9Sorting, pagination: v9Pagination } = v9
 ```
 
@@ -354,7 +354,7 @@ class TableCmp {
 
 ### Controlled State
 
-Controlled state patterns are pretty the same as v8:
+The v8-style `state` + `on[State]Change` controlled state patterns still work and remain convenient for simple integrations. For new v9 code, prefer owning state slices with external atoms via the new `atoms` table option (created with `createAtom` from `@tanstack/angular-store`), which give you fine-grained subscriptions without mirroring state through Angular signals. See the [External Atoms section of the Table State Guide](./table-state#external-atoms) and the [Basic External Atoms example](../examples/basic-external-atoms).
 
 ```ts
 import { signal } from '@angular/core'
@@ -439,12 +439,14 @@ When using `createTableHook`, you get a pre-bound `createAppColumnHelper` that o
 ```ts
 import { createTableHook, tableFeatures, rowSortingFeature } from '@tanstack/angular-table'
 
+const features = tableFeatures({ rowSortingFeature })
+
 const { injectAppTable, createAppColumnHelper } = createTableHook({
-  features: tableFeatures({ rowSortingFeature }),
+  features,
   rowModels: { /* ... */ },
 })
 
-// TFeatures is already bound — only need TData!
+// TFeatures is already bound, only need TData!
 const columnHelper = createAppColumnHelper<Person>()
 ```
 
@@ -499,9 +501,11 @@ The `tableOptions()` helper provides type-safe composition of table options. It'
 import { injectTable, tableOptions, tableFeatures, rowSortingFeature } from '@tanstack/angular-table'
 import { isDevMode } from '@angular/core';
 
+const features = tableFeatures({ rowSortingFeature })
+
 // Create a reusable options object with features pre-configured
 const baseOptions = tableOptions({
-  features: tableFeatures({ rowSortingFeature }),
+  features,
   debugTable: isDevMode()
 })
 
@@ -531,12 +535,14 @@ import {
   sortFns,
 } from '@tanstack/angular-table'
 
+const features = tableFeatures({
+  rowSortingFeature,
+  columnFilteringFeature,
+})
+
 // Partial options without data or columns
 const featureOptions = tableOptions({
-  features: tableFeatures({
-    rowSortingFeature,
-    columnFilteringFeature,
-  }),
+  features,
   rowModels: {
     sortedRowModel: createSortedRowModel(sortFns),
     filteredRowModel: createFilteredRowModel(filterFns),
@@ -583,8 +589,10 @@ import {
   sortFns,
 } from '@tanstack/angular-table'
 
+const features = tableFeatures({ rowSortingFeature, rowPaginationFeature })
+
 const sharedOptions = tableOptions({
-  features: tableFeatures({ rowSortingFeature, rowPaginationFeature }),
+  features,
   rowModels: {
     sortedRowModel: createSortedRowModel(sortFns),
     paginatedRowModel: createPaginatedRowModel(),
@@ -598,7 +606,7 @@ const { injectAppTable } = createTableHook(sharedOptions)
 
 ## `createTableHook`: Composable Table Patterns
 
-**This is an advanced, optional feature.** You don't need to use `createTableHook`—`injectTable` is sufficient for most use cases.
+**This is an advanced, optional feature.** You don't need to use `createTableHook`; `injectTable` is sufficient for most use cases.
 
 For applications with multiple tables sharing the same configuration, `createTableHook` lets you define features, row models, and reusable components once.
 
@@ -633,7 +641,7 @@ In v8, column sizing and resizing were combined in a single feature. In v9, they
 |----|-----|
 | `ColumnSizing` (combined feature) | `columnSizingFeature` + `columnResizingFeature` |
 | `columnSizingInfo` state | `columnResizing` state |
-| `setColumnSizingInfo()` | `setColumnResizing()` |
+| `setColumnSizingInfo()` | `setcolumnResizing()` (note the lowercase `c`, the current v9 spelling) |
 | `onColumnSizingInfoChange` option | `onColumnResizingChange` option |
 
 If you only need column sizing (fixed widths) without interactive resizing, you can import just `columnSizingFeature`. If you need drag-to-resize functionality, import both.
@@ -716,7 +724,17 @@ If you're using module augmentation to extend `ColumnMeta`, note that it now req
 
 ### `RowData` Type Restriction
 
-The `RowData` type is now more restrictive.
+The `RowData` type is now more restrictive:
+
+```ts
+// v8 - very permissive
+type RowData = unknown
+
+// v9 - must be a record or array
+type RowData = Record<string, any> | Array<any>
+```
+
+This change improves type safety. If you were passing unusual data types, ensure your data conforms to `Record<string, any>` or `Array<any>`.
 
 ---
 
@@ -726,7 +744,7 @@ The `RowData` type is now more restrictive.
 - [ ] Migrate `get*RowModel()` options to `rowModels`
 - [ ] Update row model factories to include `Fns` parameters where needed
 - [ ] Update TypeScript types to include `TFeatures` generic
-- [ ] Update state access: `table.getState().slice` → `table.atoms.<slice>.get()` where possible; use `table.state` for full-state/debug reads
+- [ ] Update state access: `table.getState().slice` → `table.atoms.<slice>.get()` where possible; use `table.store.get()` for full-state/debug reads
 - [ ] Update `createColumnHelper<TData>()` → `createColumnHelper<TFeatures, TData>()`
 - [ ] Replace `enablePinning` with `enableColumnPinning`/`enableRowPinning` if used
 - [ ] Rename `sortingFn` → `sortFn` in column definitions

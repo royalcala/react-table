@@ -17,7 +17,7 @@ let data = makeData(200_000)
 
 const features = tableFeatures({
   rowPaginationFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 })
 
 const columnHelper = createColumnHelper<typeof features, Person>()

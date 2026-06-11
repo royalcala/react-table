@@ -7,6 +7,7 @@ title: Row Selection (Svelte) Guide
 Want to skip to the implementation? Check out these Svelte examples:
 
 - [Row Selection](../examples/row-selection)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
@@ -32,37 +33,54 @@ The row selection feature keeps track of which rows are selected and allows you 
 
 ### Access Row Selection State
 
-The table instance already manages the row selection state for you (though as seen down below, it may be more convenient to manage the row selection state in your own scope). You can access the internal row selection state or the selected rows from a few APIs.
+The table instance already manages the row selection state for you. You can access the row selection state or the selected rows from a few APIs.
 
-- `table.atoms.rowSelection.get()` - returns the current row selection state
+- `table.state.rowSelection` - returns the row selection state reactively (selected by the `createTable` selector)
 - `getSelectedRowModel()` - returns selected rows
 - `getFilteredSelectedRowModel()` - returns selected rows after filtering
 - `getGroupedSelectedRowModel()` - returns selected rows after grouping and sorting
 
 ```ts
-console.log(table.atoms.rowSelection.get()) //get the row selection state - { 1: true, 2: false, etc... }
+console.log(table.state.rowSelection) //get the row selection state - { 1: true, 2: false, etc... }
 console.log(table.getSelectedRowModel().rows) //get full client-side selected rows
 console.log(table.getFilteredSelectedRowModel().rows) //get filtered client-side selected rows
 console.log(table.getGroupedSelectedRowModel().rows) //get grouped client-side selected rows
 ```
 
+In event handlers or other non-reactive code, you can also read the current snapshot with `table.atoms.rowSelection.get()`. This read only participates in Svelte dependency tracking when called in a rune-tracked context, so prefer `table.state.rowSelection` (or `subscribeTable`) in your markup.
+
 > Note: If you are using `manualPagination`, be aware that the `getSelectedRowModel` API will only return selected rows on the current page because table row models can only generate rows based on the `data` that is passed in. Row selection state, however, can contain row ids that are not present in the `data` array just fine.
 
 ### Manage Row Selection State
 
-Even though the table instance will already manage the row selection state for you, it is usually more convenient to manage the state yourself in order to have easy access to the selected row ids that you can use to make API calls or other actions.
-
-Use the `onRowSelectionChange` table option to hoist up the row selection state to your own scope. Then pass the row selection state back to the table instance using in the `state` table option.
+If you need easy access to the selected row ids in other parts of your application (for example, to make API calls with them), you can own the row selection state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the selection value can be read anywhere in your app without coupling that code to the table instance.
 
 ```ts
-import {
-  createTable,
-  createTableState,
-  tableFeatures,
-  rowSelectionFeature,
-} from '@tanstack/svelte-table'
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+import { createTable, tableFeatures, rowSelectionFeature } from '@tanstack/svelte-table'
+import type { RowSelectionState } from '@tanstack/svelte-table'
 
 const features = tableFeatures({ rowSelectionFeature })
+
+const rowSelectionAtom = createAtom<RowSelectionState>({})
+
+// subscribe to the atom wherever you need the value
+const rowSelection = useSelector(rowSelectionAtom) // read it reactively with rowSelection.current
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    rowSelection: rowSelectionAtom, // selection APIs now update rowSelectionAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.rowSelection` plus `onRowSelectionChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+import { createTableState } from '@tanstack/svelte-table'
 
 const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({})
 
@@ -165,7 +183,21 @@ Use the `table.getToggleAllRowsSelectedHandler()` or `table.getToggleAllPageRows
 
 If you need more granular control over these function handlers, you can always just use the `row.toggleSelected()` or `table.toggleAllRowsSelected()` APIs directly. Or you can even just call the `table.setRowSelection()` API to directly set the row selection state just as you would with any other state updater. These handler functions are just a convenience.
 
+The `indeterminate` checkbox property cannot be set from markup, so define a small Svelte action for it (this is a user-defined helper, not a library export, and is exactly what the [Row Selection example](../examples/row-selection) does):
+
 ```svelte
+<script lang="ts">
+  // Svelte action to set the indeterminate property on checkbox inputs
+  function setIndeterminate(node: HTMLInputElement, value: boolean) {
+    node.indeterminate = value
+    return {
+      update(newValue: boolean) {
+        node.indeterminate = newValue
+      },
+    }
+  }
+</script>
+
 <input
   type="checkbox"
   checked={table.getIsAllRowsSelected()}

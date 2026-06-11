@@ -7,6 +7,7 @@ title: Row Pinning (Lit) Guide
 Want to skip to the implementation? Check out these Lit examples:
 
 - [Row Pinning](../examples/row-pinning)
+
 ### Lit Setup
 
 ```ts
@@ -94,7 +95,32 @@ const table = this.tableController.table({
 })
 ```
 
-If you need to manage row pinning outside of the table instance, use `state.rowPinning` with `onRowPinningChange`.
+If you need to manage row pinning outside of the table instance, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without going through the component that owns the table.
+
+```ts
+import { createAtom } from '@tanstack/store'
+import type { RowPinningState } from '@tanstack/lit-table'
+
+// create a stable atom at module scope (or in a shared store module)
+const rowPinningAtom = createAtom<RowPinningState>({
+  top: [],
+  bottom: [],
+})
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data,
+  atoms: {
+    rowPinning: rowPinningAtom,
+  },
+})
+
+// read rowPinningAtom.get() (or subscribe to rowPinningAtom) wherever you need the value
+```
+
+Alternatively, the v8-style `state.rowPinning` plus `onRowPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 @state()

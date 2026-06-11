@@ -7,6 +7,7 @@ title: Column Ordering (Vue) Guide
 Want to skip to the implementation? Check out these Vue examples:
 
 - [Column Ordering](../examples/column-ordering)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -47,8 +48,10 @@ If you don't provide a `columnOrder` state, TanStack Table will just use the ord
 If all you need to do is specify the initial column order, you can just specify the `columnOrder` state in the `initialState` table option.
 
 ```ts
+const features = tableFeatures({ columnOrderingFeature })
+
 const table = useTable({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -64,60 +67,76 @@ const table = useTable({
 
 If you need to dynamically change the column order, or set the column order after the table has been initialized, you can manage the `columnOrder` state just like any other table state.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the column order without depending on the table instance.
+
 ```ts
-const columnOrder = ref<string[]>(['columnId1', 'columnId2', 'columnId3'])
+import { createAtom, useSelector } from '@tanstack/vue-store'
+import { useTable, tableFeatures, columnOrderingFeature } from '@tanstack/vue-table'
+import type { ColumnOrderState } from '@tanstack/vue-table'
+
+const features = tableFeatures({ columnOrderingFeature })
+
+const columnOrderAtom = createAtom<ColumnOrderState>([
+  'columnId1',
+  'columnId2',
+  'columnId3',
+])
+
+const columnOrder = useSelector(columnOrderAtom) // subscribe wherever it is needed (a Vue ref)
+
+const table = useTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnOrder: columnOrderAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnOrder` plus `onColumnOrderChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const features = tableFeatures({ columnOrderingFeature })
+
+const columnOrder = ref<ColumnOrderState>(['columnId1', 'columnId2', 'columnId3'])
 //...
 const table = useTable({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   state: {
     get columnOrder() {
-
       return columnOrder.value
-
     },
     //...
-  }
+  },
   onColumnOrderChange: (updater) => {
     columnOrder.value = updater instanceof Function ? updater(columnOrder.value) : updater
   },
   //...
-});
+})
 ```
 
 ### Reordering Columns
 
-If the table has UI that allows the user to reorder columns, you can set up the logic something like this:
+If the table has UI that allows the user to reorder columns, hook the drop event of your drag-and-drop solution up to `table.setColumnOrder`. It accepts either a new array or an updater function that receives the previous order:
 
 ```ts
-const columnOrder = ref<string[]>(columns.map(c => c.id));
-
-//depending on your dnd solution of choice, you may or may not need state like this
-const movingColumnId = ref<string | null>(null);
-const targetColumnId = ref<string | null>(null);
-
-//util function to splice and reorder the columnOrder array
-const reorderColumn = <TFeatures extends TableFeatures,  TData extends RowData>(
-  movingColumnId: Column<TFeatures, TData>,
-  targetColumnId: Column<TFeatures, TData>,
-): string[] => {
-  const newColumnOrder = [...columnOrder.value];
-  newColumnOrder.splice(
-    newColumnOrder.indexOf(targetColumnId),
-    0,
-    newColumnOrder.splice(newColumnOrder.indexOf(movingColumnId), 1)[0],
-  );
-  columnOrder.value = newColumnOrder
-};
-
-const handleDragEnd = (e: DragEvent) => {
-  if (!movingColumnId.value || !targetColumnId.value) return
-  columnOrder.value = reorderColumn(movingColumnId.value, targetColumnId.value)
-};
-
-//use your dnd solution of choice
+// reorder columns after drag & drop (or any other interaction)
+function handleColumnDrop(movingColumnId: string, targetColumnId: string) {
+  table.setColumnOrder((prevColumnOrder) => {
+    const newColumnOrder = [...prevColumnOrder]
+    const fromIndex = newColumnOrder.indexOf(movingColumnId)
+    const toIndex = newColumnOrder.indexOf(targetColumnId)
+    newColumnOrder.splice(toIndex, 0, newColumnOrder.splice(fromIndex, 1)[0]!)
+    return newColumnOrder
+  })
+}
 ```
+
+`table.setColumnOrder` works the same whether the table manages the `columnOrder` state internally, you control it with `state` + `onColumnOrderChange`, or you own it with an external atom. The official Vue [Column Ordering example](../examples/column-ordering) uses `table.setColumnOrder` to shuffle the column order with a button click.
 
 ### Column Ordering APIs
 
@@ -145,12 +164,10 @@ These helpers are useful for styling column boundaries or building drag-and-drop
 
 #### Drag and Drop Column Reordering Suggestions (Vue)
 
-There are undoubtedly many ways to implement drag and drop features along-side TanStack Table. Here are a few suggestions in order for you to not have a bad time:
+TanStack Table is not opinionated about which drag-and-drop solution you use, and there is not currently an official Vue drag-and-drop column reordering example. Here are a few suggestions:
 
-1. Do NOT try to use [`"react-dnd"`](https://react-dnd.github.io/react-dnd/docs/overview) _if you are using Vue or newer_. framework-specific DnD was an important library for its time, but it now does not get updated very often, and it has incompatibilities with Vue, especially in Vue development mode. It is still possible to get it to work, but there are newer alternatives that have better compatibility and are more actively maintained. framework-specific DnD's Provider may also interfere and conflict with any other DnD solutions you may want to try in your app.
+1. Use a SortableJS-based Vue wrapper such as [`vuedraggable`](https://github.com/SortableJS/vue.draggable.next) or [`vue-draggable-plus`](https://vue-draggable-plus.pages.dev/) if you want a library with idiomatic Vue components. Hook its drop/end event up to `table.setColumnOrder` as shown above, and verify it handles semantic `<table>` markup the way you need.
 
-2. Use [`"@dnd-kit/core"`](https://dndkit.com/). DnD Kit is a modern, modular and lightweight drag and drop library that is highly compatible with the modern Vue ecosystem, and it works well with semantic `<table>` markup. The official framework-specific DnD examples, Column DnD and Row DnD, use DnD Kit.
+2. Consider native browser drag events (`@dragstart`, `@dragenter`, `@dragend`) with your own refs if you want zero dependencies. This can be very lightweight, but you will need to do extra work for proper touch support on mobile.
 
-3. Consider other DnD libraries like [`"react-beautiful-dnd"`](https://github.com/atlassian/react-beautiful-dnd), but be aware of their potentially large bundle sizes, maintenance status, and compatibility with `<table>` markup.
-
-4. Consider using native browser events and state management to implement lightweight drag and drop features. However, be aware that this approach may not be best for mobile users if you do not go the extra mile to implement proper touch events. [Material React Table V2](https://www.material-react-table.com/docs/examples/column-ordering) is an example of a library that implements TanStack Table with only browser drag and drop events such as `onDragStart`, `onDragEnd`, `onDragEnter` and no other dependencies. Browse its source code to see how it is done.
+3. Atlassian's [Pragmatic drag and drop](https://atlassian.design/components/pragmatic-drag-and-drop/about) is framework-agnostic (its core has no React dependency) and works well with Vue. Avoid React-specific DnD libraries (including DnD Kit); they will not work in a Vue app.

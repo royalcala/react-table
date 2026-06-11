@@ -25,7 +25,7 @@ function makeTable(options: any = {}) {
     features: {
       ...coreFeatures,
       ...features,
-      coreReativityFeature: storeReactivityBindings(),
+      coreReactivityFeature: storeReactivityBindings(),
     },
     rowModels: {},
     columns: [],

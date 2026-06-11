@@ -46,7 +46,7 @@ If a slice is supplied externally via `atoms`, `table.atoms.<slice>` reads from 
 
 ## The Svelte bindings (what `svelteReactivity()` actually does)
 
-The Svelte adapter ships `svelteReactivity()` and installs it as `coreReativityFeature`. It
+The Svelte adapter ships `svelteReactivity()` and installs it as `coreReactivityFeature`. It
 maps Store primitives to runes:
 
 - Readonly atoms → `$derived.by(fn)`

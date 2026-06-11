@@ -103,7 +103,7 @@ export function useTable<
 
   const mergedOptions = mergeProxy(tableOptions, {
     features: {
-      coreReativityFeature: reactivity,
+      coreReactivityFeature: reactivity,
       ...(unref(tableOptions.features) ?? {}),
     },
   }) as TableOptionsWithReactiveData<TFeatures, TData>

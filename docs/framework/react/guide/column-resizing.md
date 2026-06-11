@@ -136,7 +136,7 @@ TanStack Table keeps track of a `columnResizing` state object that you can use t
 <ColumnResizeIndicator
   style={{
     transform: header.column.getIsResizing()
-      ? `translateX(${table.atoms.columnResizing.get().deltaOffset}px)`
+      ? `translateX(${table.state.columnResizing.deltaOffset ?? 0}px)`
       : '',
   }}
 />
@@ -155,7 +155,35 @@ type columnResizingState = {
 }
 ```
 
-Use `onColumnResizingChange` with `state.columnResizing` if you need to manage this state externally.
+You rarely need to manage this transient drag state yourself, but if you do, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can observe the resize state without re-rendering the component that owns the table.
+
+```tsx
+import { useCreateAtom, useSelector } from '@tanstack/react-store'
+import type { columnResizingState } from '@tanstack/react-table'
+
+const columnResizingAtom = useCreateAtom<columnResizingState>({
+  columnSizingStart: [],
+  deltaOffset: null,
+  deltaPercentage: null,
+  isResizingColumn: false,
+  startOffset: null,
+  startSize: null,
+})
+
+const columnResizing = useSelector(columnResizingAtom) // subscribe wherever it is needed
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    columnResizing: columnResizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnResizing` plus `onColumnResizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```tsx
 const [columnResizing, setColumnResizing] = useState<columnResizingState>({
@@ -189,7 +217,7 @@ column.getCanResize()
 column.getIsResizing()
 ```
 
-The table instance exposes APIs for the transient resize state. The current generated v9 API spelling is `table.setcolumnResizing` with a lowercase `c` in `column`; use that exact name.
+The table instance exposes APIs for the transient resize state. Note that the current v9 API spelling is `table.setcolumnResizing` with a lowercase `c` in `column`; use that exact name.
 
 ```tsx
 table.setcolumnResizing(old => ({
@@ -212,5 +240,3 @@ We have created a [performant column resizing example](../examples/column-resizi
 3. Use CSS variables to communicate column widths to your table cells.
 
 If you follow these steps, you should see significant performance improvements while resizing columns.
-
-If you are not using React, and are using the Svelte, Vue, or Solid adapters instead, you may not need to worry about this as much, but similar principles apply.

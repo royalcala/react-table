@@ -113,7 +113,7 @@ export function injectTable<
       const table = constructTable({
         ...options(),
         features: {
-          coreReativityFeature: angularReactivity(injector),
+          coreReactivityFeature: angularReactivity(injector),
           ...options().features,
         },
       }) as AngularTable<TFeatures, TData>

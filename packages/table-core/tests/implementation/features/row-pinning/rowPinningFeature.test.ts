@@ -20,7 +20,7 @@ import type { Person } from '../../../fixtures/data/types'
 const features = {
   ...coreFeatures,
   rowPinningFeature,
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 }
 
 type personKeys = keyof Person
@@ -172,7 +172,7 @@ describe('table methods', () => {
         ...coreFeatures,
         rowPinningFeature,
         rowPaginationFeature,
-        coreReativityFeature: storeReactivityBindings(),
+        coreReactivityFeature: storeReactivityBindings(),
       }
       const columns = generateColumnDefs<typeof _featuresWithPagination>(data)
 
@@ -211,7 +211,7 @@ describe('table methods', () => {
       ...coreFeatures,
       rowPinningFeature,
       rowPaginationFeature,
-      coreReativityFeature: storeReactivityBindings(),
+      coreReactivityFeature: storeReactivityBindings(),
     }
     const columns = generateColumnDefs<typeof _featuresWithPagination>(data)
 

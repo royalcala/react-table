@@ -7,6 +7,7 @@ title: Column Ordering (Lit) Guide
 Want to skip to the implementation? Check out these Lit examples:
 
 - [Column Ordering](../examples/column-ordering)
+
 ### Lit Setup
 
 ```ts
@@ -59,8 +60,10 @@ If you don't provide a `columnOrder` state, TanStack Table will just use the ord
 If all you need to do is specify the initial column order, you can just specify the `columnOrder` state in the `initialState` table option.
 
 ```ts
+const features = tableFeatures({ columnOrderingFeature })
+
 const table = this.tableController.table({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -76,60 +79,78 @@ const table = this.tableController.table({
 
 If you need to dynamically change the column order, or set the column order after the table has been initialized, you can manage the `columnOrder` state just like any other table state.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the column order without going through the component that owns the table.
+
 ```ts
+import { createAtom } from '@tanstack/store'
+import { TableController, tableFeatures, columnOrderingFeature } from '@tanstack/lit-table'
+import type { ColumnOrderState } from '@tanstack/lit-table'
+
+const features = tableFeatures({ columnOrderingFeature })
+
+// create a stable atom at module scope (or in a shared store module)
+const columnOrderAtom = createAtom<ColumnOrderState>([
+  'columnId1',
+  'columnId2',
+  'columnId3',
+])
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnOrder: columnOrderAtom,
+  },
+  //...
+})
+
+// read columnOrderAtom.get() (or subscribe to columnOrderAtom) wherever you need the value
+```
+
+Alternatively, the v8-style `state.columnOrder` plus `onColumnOrderChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const features = tableFeatures({ columnOrderingFeature })
+
 @state()
-private columnOrder: string[] = ['columnId1', 'columnId2', 'columnId3']
+private columnOrder: ColumnOrderState = ['columnId1', 'columnId2', 'columnId3']
 //...
 const table = this.tableController.table({
-  features: tableFeatures({ columnOrderingFeature }),
+  features,
   rowModels: {},
   //...
   state: {
     columnOrder: this.columnOrder,
     //...
-  }
+  },
   onColumnOrderChange: (updater) => {
     this.columnOrder = typeof updater === 'function' ? updater(this.columnOrder) : updater
   },
   //...
-});
+})
 ```
 
 ### Reordering Columns
 
-If the table has UI that allows the user to reorder columns, you can set up the logic something like this:
+If the table has UI that allows the user to reorder columns, hook the drop event of your drag-and-drop solution up to `table.setColumnOrder`. With native drag events on the header cells, a handler can look like this:
 
 ```ts
-@state()
-private columnOrder: string[] = columns.map(c => c.id);
-
-//depending on your dnd solution of choice, you may or may not need state like this
-@state()
-private movingColumnId: string | null = null;
-@state()
-private targetColumnId: string | null = null;
-
-//util function to splice and reorder the columnOrder array
-const reorderColumn = <TFeatures extends TableFeatures,  TData extends RowData>(
-  movingColumnId: Column<TFeatures, TData>,
-  targetColumnId: Column<TFeatures, TData>,
-): string[] => {
-  const newColumnOrder = [...columnOrder];
-  newColumnOrder.splice(
-    newColumnOrder.indexOf(targetColumnId),
-    0,
-    newColumnOrder.splice(newColumnOrder.indexOf(movingColumnId), 1)[0],
-  );
-  setColumnOrder(newColumnOrder);
-};
-
-const handleDragEnd = (e: DragEvent) => {
-  if(!movingColumnId || !targetColumnId) return;
-  setColumnOrder(reorderColumn(movingColumnId, targetColumnId));
-};
-
-//use your dnd solution of choice
+// inside render(), where `table` is in scope
+const handleDrop = (movingColumnId: string, targetColumnId: string) => {
+  table.setColumnOrder((prevColumnOrder) => {
+    const newColumnOrder = [...prevColumnOrder]
+    newColumnOrder.splice(
+      newColumnOrder.indexOf(targetColumnId),
+      0,
+      newColumnOrder.splice(newColumnOrder.indexOf(movingColumnId), 1)[0]!,
+    )
+    return newColumnOrder
+  })
+}
 ```
+
+`table.setColumnOrder` works the same whether the table manages the `columnOrder` state internally, you control it with `state` + `onColumnOrderChange`, or you own it with an external atom. The official [Column Ordering example](../examples/column-ordering) uses `table.setColumnOrder` the same way (with a shuffle button instead of drag and drop).
 
 ### Column Ordering APIs
 
@@ -157,12 +178,10 @@ These helpers are useful for styling column boundaries or building drag-and-drop
 
 #### Drag and Drop Column Reordering Suggestions (Lit)
 
-There are undoubtedly many ways to implement drag and drop features along-side TanStack Table. Here are a few suggestions in order for you to not have a bad time:
+TanStack Table is not opinionated about which drag-and-drop solution you use. There is no official Lit DnD example yet, but here are a few suggestions:
 
-1. Do NOT try to use [`"react-dnd"`](https://react-dnd.github.io/react-dnd/docs/overview) _if you are using Lit or newer_. framework-specific DnD was an important library for its time, but it now does not get updated very often, and it has incompatibilities with Lit, especially in Lit development mode. It is still possible to get it to work, but there are newer alternatives that have better compatibility and are more actively maintained. framework-specific DnD's Provider may also interfere and conflict with any other DnD solutions you may want to try in your app.
+1. Consider native browser drag events (`@dragstart`, `@dragenter`, `@dragend` bindings in your templates) with your own state if you want zero dependencies. Lit's event bindings make this straightforward, but you will need to do extra work for proper touch support on mobile.
 
-2. Use [`"@dnd-kit/core"`](https://dndkit.com/). DnD Kit is a modern, modular and lightweight drag and drop library that is highly compatible with the modern Lit ecosystem, and it works well with semantic `<table>` markup. The official framework-specific DnD examples, Column DnD and Row DnD, use DnD Kit.
+2. If you want a library, prefer framework-agnostic, DOM-based solutions, since they attach to real elements and do not assume any component framework. [SortableJS](https://sortablejs.github.io/Sortable/) and Atlassian's [Pragmatic drag and drop](https://atlassian.design/components/pragmatic-drag-and-drop/about) both fit Lit well. Wire their drop callbacks up to `table.setColumnOrder` as shown above.
 
-3. Consider other DnD libraries like [`"react-beautiful-dnd"`](https://github.com/atlassian/react-beautiful-dnd), but be aware of their potentially large bundle sizes, maintenance status, and compatibility with `<table>` markup.
-
-4. Consider using native browser events and state management to implement lightweight drag and drop features. However, be aware that this approach may not be best for mobile users if you do not go the extra mile to implement proper touch events. [Material React Table V2](https://www.material-react-table.com/docs/examples/column-ordering) is an example of a library that implements TanStack Table with only browser drag and drop events such as `onDragStart`, `onDragEnd`, `onDragEnter` and no other dependencies. Browse its source code to see how it is done.
+3. Avoid React-specific DnD libraries, including DnD Kit's React packages; they require a React renderer and will not work in a Lit app.

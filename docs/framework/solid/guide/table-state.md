@@ -33,7 +33,7 @@ A table instance has a few state surfaces:
 - `table.atoms` are readonly derived atoms exposed per registered state slice.
 - `table.store` is a readonly flat TanStack Store derived by putting all of the registered `table.atoms` together.
 
-The Solid adapter provides `solidReactivity(owner)` to the table's `coreReativityFeature`. Core readonly atoms are Solid `createMemo` values and core writable atoms are Solid `createSignal` values. Because atom `.get()` reads through Solid signals and memos, table APIs can be consumed inside Solid computations and update only the computations that read the relevant state.
+The Solid adapter provides `solidReactivity(owner)` to the table's `coreReactivityFeature`. Core readonly atoms are Solid `createMemo` values and core writable atoms are Solid `createSignal` values. Because atom `.get()` reads through Solid signals and memos, table APIs can be consumed inside Solid computations and update only the computations that read the relevant state.
 
 ### Feature-based State
 
@@ -126,18 +126,22 @@ You can use atom reads directly in JSX too:
 
 #### Fine-grained Updates with table.Subscribe
 
-Use `table.Subscribe` when you want a specific part of the Solid tree to create a reactive render boundary. Its child function receives `table.atoms`, and Solid tracks only the atom reads used inside that child.
+Use `table.Subscribe` when you want a specific part of the Solid tree to create a reactive render boundary. Its child function receives `table.atoms`. As with any Solid component, the child function body runs once and is untracked, so perform atom reads inside JSX expressions or in thunks called from JSX; Solid tracks only those reads.
 
 ```tsx
 <table.Subscribe>
   {(atoms) => {
-    void atoms.columnFilters.get()
-    void atoms.globalFilter.get()
-    void atoms.pagination.get()
+    // a thunk: the reads run (and track) when JSX calls it, not in the body
+    const rows = () => {
+      atoms.columnFilters.get()
+      atoms.globalFilter.get()
+      atoms.pagination.get()
+      return table.getRowModel().rows
+    }
 
     return (
       <tbody>
-        <For each={table.getRowModel().rows}>
+        <For each={rows()}>
           {(row) => <tr>{/* ... */}</tr>}
         </For>
       </tbody>

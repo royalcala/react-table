@@ -8,6 +8,7 @@ Want to skip to the implementation? Check out these Lit examples:
 
 - [Column Resizing](../examples/column-resizing)
 - [Performant Column Resizing](../examples/column-resizing-performant)
+
 ### Lit Setup
 
 ```ts
@@ -58,7 +59,7 @@ import {
 const features = tableFeatures({
   columnSizingFeature,
   columnResizingFeature,
-}
+})
 
 const columns = [
   {
@@ -81,7 +82,7 @@ const table = this.tableController.table({
 
 By default, the column resize mode is set to `"onEnd"`. This means that the `column.getSize()` API will not return the new column size until the user has finished resizing (dragging) the column. Usually a small UI indicator will be displayed while the user is resizing the column.
 
-In the React TanStack Table adapter, where achieving 60 fps column resizing renders can be difficult depending on the complexity of your table or web page, the `"onEnd"` column resize mode can be a good default option to avoid stuttering or lagging while the user resizes columns. That is not to say that you cannot achieve 60 fps column resizing renders while using TanStack React Table, but you may have to do some extra memoization or other performance optimizations in order to achieve this.
+With the `"onChange"` resize mode, every pixel of drag movement triggers a host update, which means Lit re-runs your `render` method and re-evaluates your templates on every frame. For large or complex tables this can be hard to keep at 60 fps, so the `"onEnd"` column resize mode can be a good default option to avoid stuttering or lagging while the user resizes columns. That is not to say that you cannot achieve smooth `"onChange"` resizing with Lit, but you may need to lean on CSS variables and keyed templates to keep per-frame work small.
 
 > Advanced column resizing performance tips will be discussed [down below](#advanced-column-resizing-performance).
 
@@ -154,7 +155,7 @@ html`
   <div
     class="resize-indicator"
     style="transform: ${header.column.getIsResizing()
-      ? `translateX(${table.state.columnResizing.deltaOffset}px)`
+      ? `translateX(${table.state.columnResizing.deltaOffset ?? 0}px)`
       : ''}"
   ></div>
 `
@@ -173,7 +174,34 @@ type columnResizingState = {
 }
 ```
 
-Use `onColumnResizingChange` with `state.columnResizing` if you need to manage this state externally.
+You rarely need to manage this transient drag state yourself, but if you do, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can observe the resize state without going through the component that owns the table.
+
+```ts
+import { createAtom } from '@tanstack/store'
+import type { columnResizingState } from '@tanstack/lit-table'
+
+// create a stable atom at module scope (or in a shared store module)
+const columnResizingAtom = createAtom<columnResizingState>({
+  columnSizingStart: [],
+  deltaOffset: null,
+  deltaPercentage: null,
+  isResizingColumn: false,
+  startOffset: null,
+  startSize: null,
+})
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data,
+  atoms: {
+    columnResizing: columnResizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnResizing` plus `onColumnResizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 @state()
@@ -210,7 +238,7 @@ column.getCanResize()
 column.getIsResizing()
 ```
 
-The table instance exposes APIs for the transient resize state. The current generated v9 API spelling is `table.setcolumnResizing` with a lowercase `c` in `column`; use that exact name.
+The table instance exposes APIs for the transient resize state. Note that the current v9 API spelling is `table.setcolumnResizing` with a lowercase `c` in `column`; use that exact name.
 
 ```ts
 table.setcolumnResizing(old => ({
@@ -224,14 +252,12 @@ table.resetHeaderSizeInfo(true)
 
 ### Advanced Column Resizing Performance
 
-If you are creating large or complex tables with Lit, you may find that if you do not add proper memoization to your render logic, your users may experience degraded performance while resizing columns.
+If you are creating large or complex tables with Lit, every host update during a resize drag re-evaluates your templates, and your users may experience degraded performance while resizing columns if each cell does its own size work.
 
-We have created a [performant column resizing example](../examples/column-resizing-performant) that demonstrates how to achieve 60 fps column resizing renders with a complex table that may otherwise have slow renders. It is recommended that you just look at that example to see how it is done, but these are the basic things to keep in mind:
+We have created a [performant column resizing example](../examples/column-resizing-performant) that demonstrates how to achieve smooth column resizing renders with a complex table that may otherwise have slow renders. It is recommended that you just look at that example to see how it is done, but these are the basic things to keep in mind:
 
-1. Don't use `column.getSize()` on every header and every data cell. Instead, calculate all column widths once upfront, **memoized**!
-2. Memoize your Table Body while resizing is in progress.
-3. Use CSS variables to communicate column widths to your table cells.
+1. Don't use `column.getSize()` on every header and every data cell. Instead, calculate all column widths once per render from `table.getFlatHeaders()` and expose them as CSS variables on the table wrapper.
+2. Reference those CSS variables (e.g. `width: calc(var(--col-firstName-size) * 1px)`) in your cell styles so resizing only changes the variable values, not the cell templates.
+3. Use Lit's `repeat` directive with stable keys for header groups, rows, and cells so Lit reuses DOM instead of re-creating it on every drag frame, and keep the selector you pass to `tableController.table` limited to the state you actually render.
 
 If you follow these steps, you should see significant performance improvements while resizing columns.
-
-If you are not using React, and are using the Svelte, Vue, or Solid adapters instead, you may not need to worry about this as much, but similar principles apply.

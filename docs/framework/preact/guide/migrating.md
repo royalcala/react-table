@@ -145,7 +145,6 @@ const table = useTable({
 | Column Resizing | `columnResizingFeature` |
 | Column Grouping | `columnGroupingFeature` |
 | Column Faceting | `columnFacetingFeature` |
-| Global Faceting | `globalFacetingFeature` |
 
 ---
 
@@ -323,7 +322,7 @@ function PaginationFooter({ table }) {
 
 ### Controlled State
 
-The `state` plus `on[State]Change` pattern still works for migration. Keep it per-slice.
+The v8-style `state` plus `on[State]Change` pattern still works for migration and remains convenient for simple integrations. Keep it per-slice. For new v9 code, prefer owning state slices with external atoms (see [External Atoms](#external-atoms) below), which give you fine-grained subscriptions without mirroring state through Preact.
 
 ```tsx
 import { useState } from 'preact/hooks'
@@ -604,7 +603,7 @@ type Person = {
 
 - [ ] Replace `@tanstack/react-table` imports used through `preact/compat` with `@tanstack/preact-table`.
 - [ ] Replace `useReactTable` with `useTable`.
-- [ ] Add `features: tableFeatures({ ... })`.
+- [ ] Define `features` using `tableFeatures()` (or use `stockFeatures`).
 - [ ] Replace root `get*RowModel` options with `rowModels`.
 - [ ] Drop `getCoreRowModel`; the core row model is automatic.
 - [ ] Move `sortingFns`, `filterFns`, and `aggregationFns` into row model factories.

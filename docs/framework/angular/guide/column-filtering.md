@@ -9,6 +9,7 @@ Want to skip to the implementation? Check out these Angular examples:
 - [Column Filters](../examples/filters)
 - [Faceted Filters](../examples/filters-faceted)
 - [Fuzzy Search](../examples/filters-fuzzy)
+
 ### Angular Setup
 
 ```ts
@@ -62,13 +63,15 @@ If you have decided that you need to implement server-side filtering instead of 
 No `filteredRowModel` is needed for manual server-side filtering. Instead, the `data` that you pass to the table should already be filtered. However, if you have added a `filteredRowModel` to `rowModels`, you can tell the table to skip it by setting the `manualFiltering` option to `true`.
 
 ```ts
+const features = tableFeatures({ columnFilteringFeature })
+
 readonly table = injectTable(() => ({
-  features: tableFeatures({ columnFilteringFeature }),
+  features,
   rowModels: {}, // no filteredRowModel needed for manual server-side filtering
   data,
   columns,
   manualFiltering: true,
-})
+}))
 ```
 
 > **Note:** When using manual filtering, many of the options that are discussed in the rest of this guide will have no effect. When `manualFiltering` is set to `true`, the table instance will not apply any filtering logic to the rows that are passed to it. Instead, it will assume that the rows are already filtered and will use the `data` that you pass to it as-is.
@@ -95,7 +98,7 @@ readonly table = injectTable(() => ({
   },
   data,
   columns,
-})
+}))
 ```
 
 ### Column Filter State
@@ -116,7 +119,7 @@ Since the column filter state is an array of objects, you can have multiple colu
 
 #### Accessing Column Filter State
 
-You can access the column filter state from the table instance with `table.atoms.columnFilters.get()` or from the current `table.store.state` snapshot.
+You can access the column filter state from the table instance with `table.atoms.columnFilters.get()`. In Angular, table atom reads are signal reads, so reading the atom in a template expression, `computed(...)`, or `effect(...)` automatically tracks updates. Use `table.store.get()` only when you need a flat snapshot of the whole state, such as debug JSON.
 
 ```ts
 readonly table = injectTable(() => ({
@@ -125,25 +128,50 @@ readonly table = injectTable(() => ({
   columns,
   data,
   //...
-})
+}))
 
-console.log(table.atoms.columnFilters.get()) // access the current column filters state
+// signal-reactive in templates, computed(...), and effect(...)
+this.table.atoms.columnFilters.get()
 ```
 
-However, if you need to access the column filter state before the table is initialized, you can "control" the column filter state like down below.
+However, if you need access to the column filter state outside of the table, you can "control" the column filter state like down below.
 
 ### Controlled Column Filter State
 
-If you need easy access to the column filter state, you can control/manage the column filter state in your own state management with the `state.columnFilters` and `onColumnFiltersChange` table options.
+If you need easy access to the column filter state in other parts of your application, you can own the column filter state slice yourself. The recommended way in v9 is an external atom (created with `createAtom` from `@tanstack/angular-store`) passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the filter values can be used elsewhere (such as in a query key for server-side filtering) without re-running the `injectTable` options initializer on every change.
 
 ```ts
-readonly columnFilters = signal<ColumnFiltersState>([]) // can set initial column filter state here
+import { createAtom } from '@tanstack/angular-store'
+
+export class App {
+  readonly columnFiltersAtom = createAtom<ColumnFiltersState>([]) // can set initial column filter state here
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: { filteredRowModel: createFilteredRowModel(filterFns) },
+    columns,
+    data: this.data(),
+    //...
+    atoms: {
+      columnFilters: this.columnFiltersAtom, // table filter APIs now update columnFiltersAtom
+    },
+  }))
+
+  // read the atom wherever you need the value (e.g. for a query key)
+  // this.columnFiltersAtom.get()
+}
+```
+
+Alternatively, the v8-style `state.columnFilters` plus `onColumnFiltersChange` pattern is still supported. In Angular this means owning the slice with an Angular signal, as shown in the [Basic External State example](../examples/basic-external-state). It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+readonly columnFilters = signal<ColumnFiltersState>([])
 //...
 readonly table = injectTable(() => ({
   features,
   rowModels: { filteredRowModel: createFilteredRowModel(filterFns) },
   columns,
-  data,
+  data: this.data(),
   //...
   state: {
     columnFilters: this.columnFilters(),
@@ -152,7 +180,7 @@ readonly table = injectTable(() => ({
     typeof updater === 'function'
       ? this.columnFilters.update(updater)
       : this.columnFilters.set(updater),
-})
+}))
 ```
 
 #### Initial Column Filter State
@@ -174,7 +202,7 @@ readonly table = injectTable(() => ({
       },
     ],
   },
-})
+}))
 ```
 
 > **NOTE**: Do not use both `initialState.columnFilters` and `state.columnFilters` at the same time, as the controlled `state.columnFilters` value will override the `initialState.columnFilters`.
@@ -183,29 +211,36 @@ readonly table = injectTable(() => ({
 
 Each column can have its own unique filtering logic. Choose from any of the filter functions that are provided by TanStack Table, or create your own.
 
-By default there are 10 built-in filter functions to choose from:
+By default there are 12 built-in filter functions to choose from:
 
 - `includesString` - Case-insensitive string inclusion
 - `includesStringSensitive` - Case-sensitive string inclusion
 - `equalsString` - Case-insensitive string equality
-- `equalsStringSensitive` - Case-sensitive string equality
-- `arrIncludes` - Item inclusion within an array
-- `arrIncludesAll` - All items included in an array
-- `arrIncludesSome` - Some items included in an array
-- `equals` - Object/referential equality `Object.is`/`===`
-- `weakEquals` - Weak object/referential equality `==`
-- `inNumberRange` - Number range inclusion
+- `equals` - Strict equality `===`
+- `weakEquals` - Weak equality `==`
+- `arrIncludes` - The row's array (or string) value includes at least one of the filter values
+- `arrIncludesAll` - The row's array value includes every filter value
+- `arrIncludesSome` - The row's array value includes at least one of the filter values
+- `arrHas` - The row's scalar value equals at least one of the filter values
+- `inNumberRange` - Inclusive `[min, max]` number range (endpoints normalized and swapped if reversed)
+- `between` - Exclusive min/max range (blank endpoints are open-ended)
+- `betweenInclusive` - Inclusive min/max range (blank endpoints are open-ended)
 
-You can also define your own custom filter functions either as the `filterFn` column option, or as a global filter function using the `filterFns` table option.
+You can also define your own custom filter functions, either inline as the `filterFn` column option, or by name in the filter function registry that you pass to `createFilteredRowModel`.
 
 #### Custom Filter Functions
 
 > **Note:** These filter functions only run during client-side filtering.
 
-When defining a custom filter function in either the `filterFn` column option or the `filterFns` table option, it should have the following signature:
+Whether you register a custom filter function in the registry passed to `createFilteredRowModel` or pass it directly as a `filterFn` column option, it should have the following signature:
 
 ```ts
-const myCustomFilterFn: FilterFn = (row: Row, columnId: string, filterValue: any, addMeta: (meta: any) => void) => boolean
+const myCustomFilterFn: FilterFn<typeof features, MyData> = (
+  row, // Row<typeof features, MyData>
+  columnId: string,
+  filterValue: any,
+  addMeta?: (meta: FilterMeta) => void,
+): boolean => ...
 ```
 
 Every filter function receives:
@@ -231,7 +266,7 @@ const columns = [
   {
     header: () => 'Birthday',
     accessorKey: 'birthday',
-    filterFn: 'myCustomFilterFn', // use custom global filter function
+    filterFn: 'myCustomFilterFn', // reference a custom filter function registered with createFilteredRowModel
   },
   {
     header: () => 'Profile',
@@ -256,8 +291,20 @@ readonly table = injectTable(() => ({
   },
   columns,
   data,
-})
+}))
 ```
+
+> **TypeScript Note:** For `filterFn: 'myCustomFilterFn'` string references to typecheck, augment the `FilterFns` interface with a `declare module` block:
+>
+> ```ts
+> declare module '@tanstack/angular-table' {
+>   interface FilterFns {
+>     myCustomFilterFn: FilterFn<typeof features, MyData>
+>   }
+> }
+> ```
+>
+> Alternatively, skip the registry and the augmentation entirely by passing the function directly to the `filterFn` column option. See the [Fuzzy Search example](../examples/filters-fuzzy) for a complete registration with module augmentation.
 
 ##### Customize Filter Function Behavior
 
@@ -268,10 +315,10 @@ You can attach a few other properties to filter functions to customize their beh
 - `filterFn.autoRemove` - This optional "hanging" method on any given `filterFn` is passed a filter value and expected to return `true` if the filter value should be removed from the filter state. eg. Some boolean-style filters may want to remove the filter value from the table state if the filter value is set to `false`.
 
 ```ts
-const startsWithFilterFn = <TData extends MRT_RowData>(
+const startsWithFilterFn = <TFeatures extends TableFeatures, TData extends RowData>(
   row: Row<TFeatures, TData>,
   columnId: string,
-  filterValue: number | string, //resolveFilterValue will transform this to a string
+  filterValue: string, // resolveFilterValue below transforms the raw value to a string
 ) =>
   row
     .getValue<number | string>(columnId)
@@ -313,7 +360,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   enableColumnFilters: false, // disable column filtering for all columns
-})
+}))
 ```
 
 #### Filtering Sub-Rows (Expanding)
@@ -327,8 +374,10 @@ By default, filtering is done from parent rows down, so if a parent row is filte
 However, if you want to allow sub-rows to be filtered and searched through, regardless of whether the parent row is filtered out, you can set the `filterFromLeafRows` table option to `true`. Setting this option to `true` will cause filtering to be done from leaf rows up, which means parent rows will be included so long as one of their child or grand-child rows is also included.
 
 ```ts
+const features = tableFeatures({ columnFilteringFeature, rowExpandingFeature })
+
 readonly table = injectTable(() => ({
-  features: tableFeatures({ columnFilteringFeature, rowExpandingFeature }),
+  features,
   rowModels: {
     filteredRowModel: createFilteredRowModel(filterFns),
     expandedRowModel: createExpandedRowModel(),
@@ -336,7 +385,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   filterFromLeafRows: true, // filter and search through sub-rows
-})
+}))
 ```
 
 ##### Max Leaf Row Filter Depth
@@ -346,8 +395,10 @@ By default, filtering is done for all rows in a tree, no matter if they are root
 Use `maxLeafRowFilterDepth: 0` if you want to preserve a parent row's sub-rows from being filtered out while the parent row is passing the filter.
 
 ```ts
+const features = tableFeatures({ columnFilteringFeature, rowExpandingFeature })
+
 readonly table = injectTable(() => ({
-  features: tableFeatures({ columnFilteringFeature, rowExpandingFeature }),
+  features,
   rowModels: {
     filteredRowModel: createFilteredRowModel(filterFns),
     expandedRowModel: createExpandedRowModel(),
@@ -355,7 +406,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   maxLeafRowFilterDepth: 0, // only filter root level parent rows out
-})
+}))
 ```
 
 ### Column Filter APIs

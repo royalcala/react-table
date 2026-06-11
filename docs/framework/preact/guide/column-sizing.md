@@ -43,6 +43,8 @@ export const defaultColumnSizing = {
 These defaults can be overridden by both `tableOptions.defaultColumn` and individual column defs, in that order.
 
 ```tsx
+const features = tableFeatures({ columnSizingFeature })
+
 const columns = [
   {
     accessorKey: 'col1',
@@ -52,7 +54,7 @@ const columns = [
 ]
 
 const table = useTable({
-  features: tableFeatures({ columnSizingFeature }),
+  features,
   rowModels: {},
   defaultColumn: {
     size: 200, // starting column size
@@ -117,4 +119,48 @@ table.setColumnSizing({
 
 table.resetColumnSizing()
 table.resetColumnSizing(true)
+```
+
+### Managing Column Sizing State
+
+If you need to own the `columnSizing` state yourself (for example, to persist user-set column widths), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the sizing state without re-rendering the component that owns the table.
+
+```tsx
+import { useCreateAtom, useSelector } from '@tanstack/preact-store'
+import type { ColumnSizingState } from '@tanstack/preact-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+const columnSizingAtom = useCreateAtom<ColumnSizingState>({})
+
+const columnSizing = useSelector(columnSizingAtom) // subscribe wherever it is needed
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    columnSizing: columnSizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnSizing` plus `onColumnSizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
+const features = tableFeatures({ columnSizingFeature })
+
+const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  state: {
+    columnSizing,
+  },
+  onColumnSizingChange: setColumnSizing,
+})
 ```

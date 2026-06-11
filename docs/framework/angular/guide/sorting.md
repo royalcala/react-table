@@ -50,7 +50,7 @@ Since the sorting state is an array, it is possible to sort by multiple columns 
 
 #### Accessing Sorting State
 
-You can access the sorting state directly from the table instance with `table.atoms.sorting.get()` or from the current `table.store.state` snapshot.
+You can access the sorting state directly from the table instance with `table.atoms.sorting.get()`. In Angular, table atom reads are signal reads, so reading the atom in a template expression, `computed(...)`, or `effect(...)` automatically tracks updates. Use `table.store.get()` only when you need a flat snapshot of the whole state, such as debug JSON.
 
 ```ts
 readonly table = injectTable(() => ({
@@ -59,27 +59,50 @@ readonly table = injectTable(() => ({
   columns,
   data,
   //...
-})
+}))
 
-console.log(table.atoms.sorting.get()) // access the current sorting state
+// signal-reactive in templates, computed(...), and effect(...)
+this.table.atoms.sorting.get()
 ```
 
-However, if you need to access the sorting state before the table is initialized, you can "control" the sorting state like down below.
+However, if you need access to the sorting state outside of the table, you can "control" the sorting state like down below.
 
 #### Controlled Sorting State
 
-If you need easy access to the sorting state, you can control/manage the sorting state in your own state management with the `state.sorting` and `onSortingChange` table options.
+If you need easy access to the sorting state in other parts of your application, you can own the sorting state slice yourself. The recommended way in v9 is an external atom (created with `createAtom` from `@tanstack/angular-store`) passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the sorting value can be used elsewhere (such as in a query key for server-side sorting) without re-running the `injectTable` options initializer on every change.
 
 ```ts
-readonly sorting = signal<SortingState>([]) // can set initial sorting state here
-//...
-// use sorting state to fetch data from your server or something...
+import { createAtom } from '@tanstack/angular-store'
+
+export class App {
+  readonly sortingAtom = createAtom<SortingState>([]) // can set initial sorting state here
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
+    columns,
+    data: this.data(),
+    //...
+    atoms: {
+      sorting: this.sortingAtom, // table sorting APIs now update sortingAtom
+    },
+  }))
+
+  // read the atom wherever you need the value (e.g. for a query key)
+  // this.sortingAtom.get()
+}
+```
+
+Alternatively, the v8-style `state.sorting` plus `onSortingChange` pattern is still supported. In Angular this means owning the slice with an Angular signal, as shown in the [Basic External State example](../examples/basic-external-state). It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+readonly sorting = signal<SortingState>([])
 //...
 readonly table = injectTable(() => ({
   features,
   rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
   columns,
-  data,
+  data: this.data(),
   //...
   state: {
     sorting: this.sorting(),
@@ -88,7 +111,7 @@ readonly table = injectTable(() => ({
     typeof updater === 'function'
       ? this.sorting.update(updater)
       : this.sorting.set(updater),
-})
+}))
 ```
 
 #### Initial Sorting State
@@ -110,7 +133,7 @@ readonly table = injectTable(() => ({
       },
     ],
   },
-})
+}))
 ```
 
 > **NOTE**: Do not use both `initialState.sorting` and `state.sorting` at the same time, as the controlled `state.sorting` value will override the `initialState.sorting`.
@@ -124,23 +147,29 @@ Whether or not you should use client-side or server-side sorting depends entirel
 If you plan to just use your own server-side sorting in your back-end logic, you do not need to provide a sorted row model. But if you have provided a sorting row model, but you want to disable it, you can use the `manualSorting` table option.
 
 ```ts
-readonly sorting = signal<SortingState>([])
-//...
-readonly table = injectTable(() => ({
-  features: tableFeatures({ rowSortingFeature }), // feature needed for sorting state/APIs
-  rowModels: {}, // no sortedRowModel needed for manual sorting
-  columns,
-  data,
-  manualSorting: true, // use pre-sorted row model instead of sorted row model
-  state: {
-    sorting: this.sorting(),
-  },
-  onSortingChange: (updater) =>
-    typeof updater === 'function'
-      ? this.sorting.update(updater)
-      : this.sorting.set(updater),
-})
+import { createAtom } from '@tanstack/angular-store'
+
+const features = tableFeatures({ rowSortingFeature }) // feature needed for sorting state/APIs
+
+export class App {
+  readonly sortingAtom = createAtom<SortingState>([])
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {}, // no sortedRowModel needed for manual sorting
+    columns,
+    data: this.data(),
+    manualSorting: true, // use pre-sorted row model instead of sorted row model
+    atoms: {
+      sorting: this.sortingAtom,
+    },
+  }))
+
+  // read this.sortingAtom.get() in your server-side query logic
+}
 ```
+
+Hoisting the sorting state into your own scope (with an external atom or the `state.sorting` plus `onSortingChange` pattern) is covered in the [Controlled Sorting State](#controlled-sorting-state) section above.
 
 > **NOTE**: When `manualSorting` is set to `true`, the table will assume that the data that you provide is already sorted, and will not apply any sorting to it.
 
@@ -166,7 +195,7 @@ readonly table = injectTable(() => ({
   },
   columns,
   data,
-})
+}))
 ```
 
 ### Sorting RowModelFns
@@ -184,11 +213,11 @@ By default, there are 6 built-in sorting functions to choose from:
 - `datetime` - Sorts by time, use this if your values are `Date` objects.
 - `basic` - Sorts using a basic/standard `a > b ? 1 : a < b ? -1 : 0` comparison. This is the fastest sorting function, but may not be the most accurate.
 
-You can also define your own custom sorting functions either as the `sortFn` column option, or as a global sorting function using the `sortFns` table option.
+You can also define your own custom sorting functions, either inline as the `sortFn` column option, or by name in the sorting function registry that you pass to `createSortedRowModel`.
 
 #### Custom Sorting Functions
 
-When defining a custom sorting function in either the `sortFns` table option or as a `sortFn` column option, it should have the following signature:
+Whether you register a custom sorting function in the registry passed to `createSortedRowModel` or pass it directly as a `sortFn` column option, it should have the following signature:
 
 ```ts
 //optionally use the SortFn to infer the parameter types
@@ -197,7 +226,7 @@ const myCustomSortFn: SortFn<TFeatures, TData> = (rowA: Row<TFeatures, TData>, r
 }
 ```
 
-> Note: The comparison function does not need to take whether or not the column is in descending or ascending order into account. The row models will take of that logic. `sortFn` functions only need to provide a consistent comparison.
+> Note: The comparison function does not need to take whether or not the column is in descending or ascending order into account. The row models will take care of that logic. `sortFn` functions only need to provide a consistent comparison.
 
 Every sorting function receives 2 rows and a column ID and are expected to compare the two rows using the column ID to return `-1`, `0`, or `1` in ascending order. Here's a cheat sheet:
 
@@ -217,7 +246,7 @@ const columns = [
   {
     header: () => 'Age',
     accessorKey: 'age',
-    sortFn: 'myCustomSortFn', // use custom global sorting function
+    sortFn: 'myCustomSortFn', // reference a custom sorting function registered with createSortedRowModel
   },
   {
     header: () => 'Birthday',
@@ -249,8 +278,20 @@ readonly table = injectTable(() => ({
   },
   columns,
   data,
-})
+}))
 ```
+
+> **TypeScript Note:** For `sortFn: 'myCustomSortFn'` string references to typecheck, augment the `SortFns` interface with a `declare module` block:
+>
+> ```ts
+> declare module '@tanstack/angular-table' {
+>   interface SortFns {
+>     myCustomSortFn: SortFn<typeof features, MyData>
+>   }
+> }
+> ```
+>
+> Alternatively, skip the registry and the augmentation entirely by passing the function directly to the `sortFn` column option.
 
 ### Customize Sorting
 
@@ -280,7 +321,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   enableSorting: false, // disable sorting for the entire table
-})
+}))
 ```
 
 #### Sorting Direction
@@ -308,7 +349,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   sortDescFirst: true, //sort by all columns in descending order first (default is ascending for string columns and descending for number columns)
-})
+}))
 ```
 
 > **NOTE**: You may want to explicitly set the `sortDescFirst` column option on any columns that have nullable values. The table may not be able to properly determine if a column is a number or a string if it contains nullable values.
@@ -332,7 +373,7 @@ const columns = [
 
 Any undefined values will be sorted to the beginning or end of the list based on the `sortUndefined` column option or table option. You can customize this behavior for your specific use-case.
 
-In not specified, the default value for `sortUndefined` is `1`, and undefined values will be sorted with lower priority (descending), if ascending, undefined will appear on the end of the list.
+If not specified, the default value for `sortUndefined` is `1`, and undefined values will be sorted with lower priority (descending), if ascending, undefined will appear on the end of the list.
 
 - `'first'` - Undefined values will be pushed to the beginning of the list
 - `'last'` - Undefined values will be pushed to the end of the list
@@ -356,13 +397,13 @@ const columns = [
 
 By default, the ability to remove sorting while cycling through the sorting states for a column is enabled. You can disable this behavior using the `enableSortingRemoval` table option. This behavior is useful if you want to ensure that at least one column is always sorted.
 
-The default behavior when using either the `getToggleSortingHandler` or `toggleSorting` APIs is to cycle through the sorting states like this:
+The default behavior when using either the `getToggleSortingHandler` or `toggleSorting` APIs is to cycle through the sorting states like this (the first direction depends on the column's data type and the `sortDescFirst` option, as discussed [above](#sorting-direction); a string column is shown here):
 
-`'none' -> 'desc' -> 'asc' -> 'none' -> 'desc' -> 'asc' -> ...`
+`'none' -> 'asc' -> 'desc' -> 'none' -> 'asc' -> 'desc' -> ...`
 
-If you disable sorting removal, the behavior will be like this:
+If you disable sorting removal, the `'none'` state is skipped after the first sort:
 
-`'none' -> 'desc' -> 'asc' -> 'desc' -> 'asc' -> ...`
+`'none' -> 'asc' -> 'desc' -> 'asc' -> 'desc' -> ...`
 
 Once a column is sorted and `enableSortingRemoval` is `false`, toggling the sorting on that column will never remove the sorting. However, if the user sorts by another column and it is not a multi-sort event, then the sorting will be removed from the previous column and just applied to the new column.
 
@@ -374,8 +415,8 @@ readonly table = injectTable(() => ({
   rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
   columns,
   data,
-  enableSortingRemoval: false, // disable the ability to remove sorting on columns (always none -> asc -> desc -> asc)
-})
+  enableSortingRemoval: false, // disable the ability to remove sorting on columns (sorting can never return to 'none' once applied)
+}))
 ```
 
 #### Multi-Sorting
@@ -402,7 +443,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   enableMultiSort: false, // disable multi-sorting for the entire table
-})
+}))
 ```
 
 ##### Customize Multi-Sorting Trigger
@@ -418,7 +459,7 @@ readonly table = injectTable(() => ({
   isMultiSortEvent: (e) => true, // normal click triggers multi-sorting
   //or
   isMultiSortEvent: (e) => e.ctrlKey || e.shiftKey, // also use the `Ctrl` key to trigger multi-sorting
-})
+}))
 ```
 
 ##### Multi-Sorting Limit
@@ -432,7 +473,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   maxMultiSortColCount: 3, // only allow 3 columns to be sorted at once
-})
+}))
 ```
 
 ##### Multi-Sorting Removal
@@ -446,7 +487,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   enableMultiRemove: false, // disable the ability to remove multi-sorts
-})
+}))
 ```
 
 ### Sorting APIs

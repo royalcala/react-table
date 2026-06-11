@@ -9,6 +9,7 @@ Want to skip to the implementation? Check out these Angular examples:
 - [Column Pinning](../examples/column-pinning)
 - [Column Pinning Split](../examples/column-pinning-split)
 - [Sticky Column Pinning](../examples/column-pinning-sticky)
+
 ### Angular Setup
 
 ```ts
@@ -47,11 +48,38 @@ The only way to change the order of the pinned columns is in the `columnPinning.
 
 Managing the `columnPinning` state is optional, and usually not necessary unless you are adding persistent state features. TanStack Table will already keep track of the column pinning state for you. Manage the `columnPinning` state just like any other table state if you need to.
 
+In v9, the recommended way to own a state slice is with an external atom (created with `createAtom` from `@tanstack/angular-store`) passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without re-running the `injectTable` options initializer on every change.
+
 ```ts
+import { createAtom } from '@tanstack/angular-store'
 import { injectTable, tableFeatures, columnPinningFeature } from '@tanstack/angular-table'
+import type { ColumnPinningState } from '@tanstack/angular-table'
 
 const features = tableFeatures({ columnPinningFeature })
 
+export class App {
+  readonly columnPinningAtom = createAtom<ColumnPinningState>({
+    left: [],
+    right: [],
+  })
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {},
+    //...
+    atoms: {
+      columnPinning: this.columnPinningAtom,
+    },
+    //...
+  }))
+
+  // read this.columnPinningAtom.get() wherever you need the value
+}
+```
+
+Alternatively, the v8-style `state.columnPinning` plus `onColumnPinningChange` pattern is still supported. In Angular this means owning the slice with an Angular signal. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
 readonly columnPinning = signal<ColumnPinningState>({
   left: [],
   right: [],
@@ -70,7 +98,7 @@ readonly table = injectTable(() => ({
       ? this.columnPinning.update(updater)
       : this.columnPinning.set(updater),
   //...
-})
+}))
 ```
 
 ### Pin Columns by Default
@@ -90,7 +118,7 @@ readonly table = injectTable(() => ({
     //...
   },
   //...
-})
+}))
 ```
 
 ### Useful Column Pinning APIs

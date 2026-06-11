@@ -7,6 +7,7 @@ title: Row Pinning (Angular) Guide
 Want to skip to the implementation? Check out these Angular examples:
 
 - [Row Pinning](../examples/row-pinning)
+
 ### Angular Setup
 
 ```ts
@@ -54,7 +55,7 @@ readonly table = injectTable(() => ({
   rowModels: {},
   columns,
   data,
-})
+}))
 ```
 
 ### Row Pinning State
@@ -82,10 +83,36 @@ readonly table = injectTable(() => ({
       bottom: ['3'],
     },
   },
-})
+}))
 ```
 
-If you need to manage row pinning outside of the table instance, use `state.rowPinning` with `onRowPinningChange`.
+If you need to manage row pinning outside of the table instance, the recommended v9 approach is an external atom (created with `createAtom` from `@tanstack/angular-store`) passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without re-running the `injectTable` options initializer on every change.
+
+```ts
+import { createAtom } from '@tanstack/angular-store'
+import type { RowPinningState } from '@tanstack/angular-table'
+
+export class App {
+  readonly rowPinningAtom = createAtom<RowPinningState>({
+    top: [],
+    bottom: [],
+  })
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {},
+    columns,
+    data: this.data(),
+    atoms: {
+      rowPinning: this.rowPinningAtom,
+    },
+  }))
+
+  // read this.rowPinningAtom.get() wherever you need the value
+}
+```
+
+Alternatively, the v8-style `state.rowPinning` plus `onRowPinningChange` pattern is still supported. In Angular this means owning the slice with an Angular signal. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 readonly rowPinning = signal<RowPinningState>({
@@ -105,7 +132,7 @@ readonly table = injectTable(() => ({
     typeof updater === 'function'
       ? this.rowPinning.update(updater)
       : this.rowPinning.set(updater),
-})
+}))
 ```
 
 Use `table.setRowPinning` to update the state directly, and `table.resetRowPinning` to reset it to `initialState.rowPinning`. Pass `true` to `resetRowPinning` to clear both pinned row arrays.
@@ -199,7 +226,7 @@ readonly table = injectTable(() => ({
   columns,
   data,
   enableRowPinning: row => row.original.status !== 'archived',
-})
+}))
 ```
 
 ### Keep Pinned Rows
@@ -215,5 +242,5 @@ readonly table = injectTable(() => ({
   columns,
   data,
   keepPinnedRows: false,
-})
+}))
 ```

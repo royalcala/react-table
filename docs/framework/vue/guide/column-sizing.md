@@ -7,6 +7,7 @@ title: Column Sizing (Vue) Guide
 Want to skip to the implementation? Check out these Vue examples:
 
 - [Column Sizing](../examples/column-sizing)
+
 Vue refs can be passed directly where the adapter expects reactive table options.
 
 ### Vue Setup
@@ -45,6 +46,8 @@ export const defaultColumnSizing = {
 These defaults can be overridden by both `tableOptions.defaultColumn` and individual column defs, in that order.
 
 ```ts
+const features = tableFeatures({ columnSizingFeature })
+
 const columns = [
   {
     accessorKey: 'col1',
@@ -54,7 +57,7 @@ const columns = [
 ]
 
 const table = useTable({
-  features: tableFeatures({ columnSizingFeature }),
+  features,
   rowModels: {},
   defaultColumn: {
     size: 200, // starting column size
@@ -67,7 +70,7 @@ const table = useTable({
 
 The column "sizes" are stored in the table state as numbers, and are usually interpreted as pixel unit values, but you can hook up these column sizing values to your css styles however you see fit.
 
-As a headless utility, table logic for column sizing is really only a collection of states that you can apply to your own layouts how you see fit (our example above implements 2 styles of this logic). You can apply these width measurements in a variety of ways:
+As a headless utility, table logic for column sizing is really only a collection of states that you can apply to your own layouts how you see fit (see the [Column Sizing example](../examples/column-sizing)). You can apply these width measurements in a variety of ways:
 
 - semantic `table` elements or any elements being displayed in a table css mode
 - `div/span` elements or any elements being displayed in a non-table css mode
@@ -119,4 +122,52 @@ table.setColumnSizing({
 
 table.resetColumnSizing()
 table.resetColumnSizing(true)
+```
+
+### Managing Column Sizing State
+
+If you need to own the `columnSizing` state yourself (for example, to persist user-set column widths), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the sizing state without depending on the table instance.
+
+```ts
+import { createAtom, useSelector } from '@tanstack/vue-store'
+import type { ColumnSizingState } from '@tanstack/vue-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+const columnSizingAtom = createAtom<ColumnSizingState>({})
+
+const columnSizing = useSelector(columnSizingAtom) // subscribe wherever it is needed (a Vue ref)
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  atoms: {
+    columnSizing: columnSizingAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.columnSizing` plus `onColumnSizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. Pass the current ref value through a getter so the adapter can track it. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const features = tableFeatures({ columnSizingFeature })
+
+const columnSizing = ref<ColumnSizingState>({})
+
+const table = useTable({
+  features,
+  rowModels: {},
+  columns,
+  data,
+  state: {
+    get columnSizing() {
+      return columnSizing.value
+    },
+  },
+  onColumnSizingChange: (updater) => {
+    columnSizing.value = updater instanceof Function ? updater(columnSizing.value) : updater
+  },
+})
 ```

@@ -7,7 +7,7 @@ describe('constructTable with stockFeatures', () => {
     const table = constructTable({
       features: {
         ...stockFeatures,
-        coreReativityFeature: storeReactivityBindings(),
+        coreReactivityFeature: storeReactivityBindings(),
       },
       columns: [],
       data: [],

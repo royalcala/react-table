@@ -7,6 +7,7 @@ title: Column Sizing (Lit) Guide
 Want to skip to the implementation? Check out these Lit examples:
 
 - [Column Sizing](../examples/column-sizing)
+
 ### Lit Setup
 
 ```ts
@@ -57,6 +58,8 @@ export const defaultColumnSizing = {
 These defaults can be overridden by both `tableOptions.defaultColumn` and individual column defs, in that order.
 
 ```ts
+const features = tableFeatures({ columnSizingFeature })
+
 const columns = [
   {
     accessorKey: 'col1',
@@ -66,7 +69,7 @@ const columns = [
 ]
 
 const table = this.tableController.table({
-  features: tableFeatures({ columnSizingFeature }),
+  features,
   rowModels: {},
   defaultColumn: {
     size: 200, // starting column size
@@ -131,4 +134,52 @@ table.setColumnSizing({
 
 table.resetColumnSizing()
 table.resetColumnSizing(true)
+```
+
+### Managing Column Sizing State
+
+If you need to own the `columnSizing` state yourself (for example, to persist user-set column widths), the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the sizing state without going through the component that owns the table.
+
+```ts
+import { createAtom } from '@tanstack/store'
+import type { ColumnSizingState } from '@tanstack/lit-table'
+
+const features = tableFeatures({ columnSizingFeature })
+
+// create a stable atom at module scope (or in a shared store module)
+const columnSizingAtom = createAtom<ColumnSizingState>({})
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data,
+  atoms: {
+    columnSizing: columnSizingAtom,
+  },
+})
+
+// read columnSizingAtom.get() (or subscribe to columnSizingAtom) wherever you need the value
+```
+
+Alternatively, the v8-style `state.columnSizing` plus `onColumnSizingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const features = tableFeatures({ columnSizingFeature })
+
+@state()
+private columnSizing: ColumnSizingState = {}
+
+const table = this.tableController.table({
+  features,
+  rowModels: {},
+  columns,
+  data: this.data,
+  state: {
+    columnSizing: this.columnSizing,
+  },
+  onColumnSizingChange: (updater) => {
+    this.columnSizing = typeof updater === 'function' ? updater(this.columnSizing) : updater
+  },
+})
 ```

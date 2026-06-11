@@ -41,13 +41,13 @@ class MyTable extends LitElement {
 
 ## Grouping (Lit) Guide
 
-There are 3 table features that can reorder columns, which happen in the following order:
+Grouping in TanStack table is a feature that applies to columns and allows you to categorize and organize the table rows based on specific columns. This can be useful in cases where you have a large amount of data and you want to group them together based on certain criteria.
+
+Grouping can also affect column order. There are 3 table features that can reorder columns, which happen in the following order:
 
 1. [Column Pinning](./column-pinning) - If pinning, columns are split into left, center (unpinned), and right pinned columns.
 2. Manual [Column Ordering](./column-ordering) - A manually specified column order is applied.
 3. **Grouping** - If grouping is enabled, a grouping state is active, and `tableOptions.groupedColumnMode` is set to `'reorder' | 'remove'`, then the grouped columns are reordered to the start of the column flow.
-
-Grouping in TanStack table is a feature that applies to columns and allows you to categorize and organize the table rows based on specific columns. This can be useful in cases where you have a large amount of data and you want to group them together based on certain criteria.
 
 To use the grouping feature, add the `columnGroupingFeature` to your features and the `groupedRowModel` to your row models. The grouped row model is responsible for grouping the rows based on the grouping state.
 
@@ -114,7 +114,7 @@ const table = this.tableController.table({
 
 ### Aggregations
 
-When rows are grouped, you can aggregate the data in the grouped rows by columns using the aggregationFn option. This is a string that is the ID of the aggregation function. You can define the aggregation functions using the aggregationFns option.
+When rows are grouped, you can aggregate the data in the grouped rows by columns using the `aggregationFn` column option. This is a string that is the name of a built-in aggregation function, or a custom aggregation function registered in the registry passed to `createGroupedRowModel`.
 
 ```ts
 const column = columnHelper.accessor('key', {
@@ -139,7 +139,7 @@ There are several built-in aggregation functions that you can use:
 
 #### Custom Aggregations
 
-When rows are grouped, you can aggregate the data in the grouped rows using the aggregationFns option. This is a record where the keys are the IDs of the aggregation functions, and the values are the aggregation functions themselves. You can then reference these aggregation functions in a column's aggregationFn option.
+You can define custom aggregation functions in the registry that you pass to `createGroupedRowModel`. The registry is a record where the keys are the names of the aggregation functions, and the values are the aggregation functions themselves. You can then reference these aggregation functions by name in a column's `aggregationFn` option.
 
 ```ts
 const table = this.tableController.table({
@@ -164,13 +164,27 @@ const column = columnHelper.accessor('key', {
 })
 ```
 
+> **TypeScript Note:** For `aggregationFn: 'myCustomAggregation'` string references to typecheck, augment the `AggregationFns` interface with a `declare module` block:
+>
+> ```ts
+> declare module '@tanstack/lit-table' {
+>   interface AggregationFns {
+>     myCustomAggregation: AggregationFn<typeof features, MyData>
+>   }
+> }
+> ```
+>
+> Alternatively, skip the registry and the augmentation entirely by passing the function directly to the `aggregationFn` column option.
+
 ### Manual Grouping
 
 If you are doing server-side grouping and aggregation, you can enable manual grouping using the manualGrouping option. When this option is set to true, the table will not automatically group rows using getGroupedRowModel() and instead will expect you to manually group the rows before passing them to the table.
 
 ```ts
+const features = tableFeatures({ columnGroupingFeature })
+
 const table = this.tableController.table({
-  features: tableFeatures({ columnGroupingFeature }),
+  features,
   rowModels: {}, // no groupedRowModel needed for manual grouping
   // other options...
   manualGrouping: true,
@@ -179,13 +193,34 @@ const table = this.tableController.table({
 
 > **Note:** There are not currently many known easy ways to do server-side grouping with TanStack Table. You will need to do lots of custom cell rendering to make this work.
 
-### Grouping Change Handler
+### Controlled Grouping State
 
-If you want to manage the grouping state yourself, you can use the onGroupingChange option. This option is a function that is called when the grouping state changes. You can pass the managed state back to the table via the tableOptions.state.grouping option.
+If you need access to the grouping state in other parts of your application, you can own the `grouping` state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the grouping value can be read or subscribed to from any module (such as in a query key for server-side grouping) without going through the component that owns the table.
+
+```ts
+import { createAtom } from '@tanstack/store'
+import type { GroupingState } from '@tanstack/lit-table'
+
+// create a stable atom at module scope (or in a shared store module)
+const groupingAtom = createAtom<GroupingState>([])
+
+const table = this.tableController.table({
+  features,
+  rowModels: { groupedRowModel: createGroupedRowModel(aggregationFns) },
+  // other options...
+  atoms: {
+    grouping: groupingAtom, // grouping APIs now update groupingAtom
+  },
+})
+
+// read groupingAtom.get() (or subscribe to groupingAtom) wherever you need the value
+```
+
+Alternatively, the v8-style `state.grouping` plus `onGroupingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 @state()
-private grouping: string[] = []
+private grouping: GroupingState = []
 
 const table = this.tableController.table({
   features,

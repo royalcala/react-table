@@ -12,7 +12,7 @@ import type { Person } from './makeData'
 let data = makeData(20)
 
 const features = tableFeatures({
-  coreReativityFeature: storeReactivityBindings(),
+  coreReactivityFeature: storeReactivityBindings(),
 })
 
 const columnHelper = createColumnHelper<typeof features, Person>()

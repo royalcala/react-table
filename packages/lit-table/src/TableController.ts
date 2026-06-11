@@ -175,7 +175,7 @@ export class TableController<
       const mergedOptions: TableOptions<TFeatures, TData> = {
         ...tableOptions,
         features: {
-          coreReativityFeature: litReactivity(),
+          coreReactivityFeature: litReactivity(),
           ...tableOptions.features,
         },
         mergeOptions: (

@@ -15,7 +15,7 @@ Use getters for reactive inputs such as `data` when passing Solid signals to `cr
 ### Solid Setup
 
 Install and import the Solid virtualizer adapter from `@tanstack/solid-virtual`. TanStack Table still owns rows, columns, and table state; the virtualizer owns scroll indexes and measurements.
-Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table).
+Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table) (a React example, but the virtualizer options translate directly to `createVirtualizer`).
 
 ## Virtualization (Solid) Guide
 
@@ -44,6 +44,37 @@ npm install @tanstack/solid-virtual
 ```
 
 The Solid examples use `createVirtualizer` from `@tanstack/solid-virtual`. TanStack Table still owns rows, columns, headers, cells, sizing, sorting, filtering, and other table state; TanStack Virtual decides which item indexes should render for the current scroll position.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with `createTable`; nothing about virtualization changes the table setup.
+
+```tsx
+import {
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+  createTable,
+} from '@tanstack/solid-table'
+import { createVirtualizer } from '@tanstack/solid-virtual'
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+const table = createTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  get data() {
+    return data()
+  },
+})
+```
+
 ### The Basic Pattern
 
 Most virtualized table implementations follow the same pattern:
@@ -57,12 +88,18 @@ Most virtualized table implementations follow the same pattern:
 
 Here is a compact row virtualization example:
 
+In Solid, define `rows` as a thunk and pass `count` through a `get count()` getter so the virtualizer tracks row-model changes (data refresh, filtering, expansion); a plain `count: rows.length` would be a one-time snapshot.
+
 ```tsx
-const rows = table.getRowModel().rows
+const rows = () => table.getRowModel().rows
+
+let tableContainerRef: HTMLDivElement | undefined
 
 const rowVirtualizer = createVirtualizer({
-  count: rows.length,
-  getScrollElement: () => tableContainerRef,
+  get count() {
+    return rows().length
+  },
+  getScrollElement: () => tableContainerRef ?? null,
   estimateSize: () => 33,
   overscan: 5,
 })
@@ -75,7 +112,7 @@ const rowVirtualizer = createVirtualizer({
 >
   <For each={rowVirtualizer.getVirtualItems()}>
     {(virtualRow) => {
-      const row = rows[virtualRow.index]
+      const row = rows()[virtualRow.index]
       return (
         <tr
           style={{
@@ -101,7 +138,7 @@ The [virtualized rows examples](../examples/virtualized-rows) show how to render
 The core idea is that sorting, filtering, grouping, and other row-model work still comes from TanStack Table. The virtualizer reads from the final table row model:
 
 ```tsx
-const rows = table.getRowModel().rows
+const rows = () => table.getRowModel().rows
 ```
 
 The row virtualizer is configured with `count: rows.length`, a row height estimate, the scroll container, and an overscan value. The `tbody` is given the full virtual height with `rowVirtualizer.getTotalSize()`, while each rendered row is absolutely positioned with `transform: translateY(...)`.
@@ -114,19 +151,21 @@ The official examples use large generated datasets, commonly tens or hundreds of
 
 The [virtualized columns examples](../examples/virtualized-columns) show how to render large row and column counts. The examples are available for React, Solid, Svelte, Vue, Angular, and Lit.
 
-Column virtualization uses the current visible column list:
+Column virtualization uses the current visible column list, again as a thunk so the count stays reactive:
 
 ```tsx
-const visibleColumns = table.getVisibleLeafColumns()
+const visibleColumns = () => table.getVisibleLeafColumns()
 ```
 
 The column virtualizer is configured for horizontal virtualization:
 
 ```tsx
 const columnVirtualizer = createVirtualizer({
-  count: visibleColumns.length,
-  estimateSize: index => visibleColumns[index].getSize(),
-  getScrollElement: () => tableContainerRef.current,
+  get count() {
+    return visibleColumns().length
+  },
+  estimateSize: (index) => visibleColumns()[index].getSize(),
+  getScrollElement: () => tableContainerRef ?? null,
   horizontal: true,
   overscan: 3,
 })
@@ -198,7 +237,7 @@ Then use `measureElement` to refine the actual row height after rendering:
 >
 ```
 
-Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In non-React adapters, call `measureElement` through the adapter-appropriate ref, action, directive, or controller.
+Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In Solid, pass `measureElement` through a ref callback exactly as shown above; this is what the [Virtualized Rows example](../examples/virtualized-rows) does. The example also skips dynamic measurement in Firefox (passing `measureElement: undefined`) because Firefox measures table border heights differently.
 
 Overscan helps avoid blank regions while measurements settle. If every row has a known fixed height, skip dynamic measurement and use the fixed height estimate instead.
 

@@ -7,6 +7,7 @@ title: Column Visibility (Angular) Guide
 Want to skip to the implementation? Check out these Angular examples:
 
 - [Column Visibility](../examples/column-visibility)
+
 ### Angular Setup
 
 ```ts
@@ -35,17 +36,48 @@ The column visibility feature allows table columns to be hidden or shown dynamic
 
 The `columnVisibility` state is a map of column IDs to boolean values. A column will be hidden if its ID is present in the map and the value is `false`. If the column ID is not present in the map, or the value is `true`, the column will be shown.
 
-```ts
-import { injectTable, tableFeatures, columnVisibilityFeature } from '@tanstack/angular-table'
+If you need to own the `columnVisibility` state yourself (for example, to persist user preferences), the recommended v9 approach is an external atom (created with `createAtom` from `@tanstack/angular-store`) passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the visibility state without re-running the `injectTable` options initializer on every change.
 
-readonly columnVisibility = signal({
+```ts
+import { createAtom } from '@tanstack/angular-store'
+import { injectTable, tableFeatures, columnVisibilityFeature } from '@tanstack/angular-table'
+import type { ColumnVisibilityState } from '@tanstack/angular-table'
+
+const features = tableFeatures({ columnVisibilityFeature })
+
+export class App {
+  readonly columnVisibilityAtom = createAtom<ColumnVisibilityState>({
+    columnId1: true,
+    columnId2: false, // hide this column by default
+    columnId3: true,
+  })
+
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {},
+    //...
+    atoms: {
+      columnVisibility: this.columnVisibilityAtom,
+    },
+  }))
+
+  // read this.columnVisibilityAtom.get() wherever you need the value
+}
+```
+
+Alternatively, the v8-style `state.columnVisibility` plus `onColumnVisibilityChange` pattern is still supported. In Angular this means owning the slice with an Angular signal. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+const features = tableFeatures({ columnVisibilityFeature })
+
+readonly columnVisibility = signal<ColumnVisibilityState>({
   columnId1: true,
   columnId2: false, // hide this column by default
   columnId3: true,
 })
 
 readonly table = injectTable(() => ({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   state: {
@@ -56,7 +88,7 @@ readonly table = injectTable(() => ({
     typeof updater === 'function'
       ? this.columnVisibility.update(updater)
       : this.columnVisibility.set(updater),
-})
+}))
 ```
 
 Alternatively, if you don't need to manage the column visibility state outside of the table, you can still set the initial default column visibility state using the `initialState` option.
@@ -64,8 +96,10 @@ Alternatively, if you don't need to manage the column visibility state outside o
 > **Note**: If `columnVisibility` is provided to both `initialState` and `state`, the `state` initialization will take precedence and `initialState` will be ignored. Do not provide `columnVisibility` to both `initialState` and `state`, only one or the other.
 
 ```ts
+const features = tableFeatures({ columnVisibilityFeature })
+
 readonly table = injectTable(() => ({
-  features: tableFeatures({ columnVisibilityFeature }),
+  features,
   rowModels: {},
   //...
   initialState: {
@@ -76,7 +110,7 @@ readonly table = injectTable(() => ({
     },
     //...
   },
-})
+}))
 ```
 
 ### Disable Hiding Columns
@@ -92,7 +126,7 @@ const columns = [
   },
   {
     header: 'Name',
-    accessor: 'name', // can be hidden
+    accessorKey: 'name', // can be hidden
   },
 ];
 ```

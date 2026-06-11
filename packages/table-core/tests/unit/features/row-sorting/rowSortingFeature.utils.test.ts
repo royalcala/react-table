@@ -39,7 +39,7 @@ function generateAutoSortTestTable(data: Array<Sample>) {
     columns,
     features: {
       ...features,
-      coreReativityFeature: storeReactivityBindings(),
+      coreReactivityFeature: storeReactivityBindings(),
     },
   })
 

@@ -50,6 +50,12 @@ import {
   SortIndicator,
 } from '../components/header-components'
 
+const features = tableFeatures({
+  columnFilteringFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+})
+
 export const {
   createAppColumnHelper,
   useAppTable,
@@ -57,11 +63,7 @@ export const {
   useCellContext,
   useHeaderContext,
 } = createTableHook({
-  features: tableFeatures({
-    columnFilteringFeature,
-    rowPaginationFeature,
-    rowSortingFeature,
-  }),
+  features,
   rowModels: {
     sortedRowModel: createSortedRowModel(sortFns),
     filteredRowModel: createFilteredRowModel(filterFns),

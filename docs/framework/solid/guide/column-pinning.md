@@ -9,6 +9,7 @@ Want to skip to the implementation? Check out these Solid examples:
 - [Column Pinning](../examples/column-pinning)
 - [Column Pinning Split](../examples/column-pinning-split)
 - [Sticky Column Pinning](../examples/column-pinning-sticky)
+
 Use getters for reactive inputs such as `data` when passing Solid signals to `createTable`.
 
 ### Solid Setup
@@ -23,7 +24,7 @@ const table = createTable({
   rowModels: {},
   columns,
   get data() {
-    return data
+    return data()
   },
 })
 ```
@@ -46,11 +47,36 @@ The only way to change the order of the pinned columns is in the `columnPinning.
 
 Managing the `columnPinning` state is optional, and usually not necessary unless you are adding persistent state features. TanStack Table will already keep track of the column pinning state for you. Manage the `columnPinning` state just like any other table state if you need to.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without going through the component that owns the table.
+
 ```tsx
+import { createAtom, useSelector } from '@tanstack/solid-store'
 import { createTable, tableFeatures, columnPinningFeature } from '@tanstack/solid-table'
+import type { ColumnPinningState } from '@tanstack/solid-table'
 
 const features = tableFeatures({ columnPinningFeature })
 
+const columnPinningAtom = createAtom<ColumnPinningState>({
+  left: [],
+  right: [],
+})
+
+const columnPinning = useSelector(columnPinningAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnPinning: columnPinningAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnPinning` plus `onColumnPinningChange` pattern is still supported with Solid signals. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
 const [columnPinning, setColumnPinning] = createSignal<ColumnPinningState>({
   left: [],
   right: [],
@@ -61,7 +87,9 @@ const table = createTable({
   rowModels: {},
   //...
   state: {
-    columnPinning,
+    get columnPinning() {
+      return columnPinning() // connect the signal back down to the table
+    },
     //...
   },
   onColumnPinningChange: setColumnPinning,

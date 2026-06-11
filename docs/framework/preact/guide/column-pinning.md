@@ -42,11 +42,36 @@ The only way to change the order of the pinned columns is in the `columnPinning.
 
 Managing the `columnPinning` state is optional, and usually not necessary unless you are adding persistent state features. TanStack Table will already keep track of the column pinning state for you. Manage the `columnPinning` state just like any other table state if you need to.
 
+In v9, the recommended way to own a state slice is with an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without re-rendering the component that owns the table.
+
 ```tsx
+import { useCreateAtom, useSelector } from '@tanstack/preact-store'
 import { useTable, tableFeatures, columnPinningFeature } from '@tanstack/preact-table'
+import type { ColumnPinningState } from '@tanstack/preact-table'
 
 const features = tableFeatures({ columnPinningFeature })
 
+const columnPinningAtom = useCreateAtom<ColumnPinningState>({
+  left: [],
+  right: [],
+})
+
+const columnPinning = useSelector(columnPinningAtom) // subscribe wherever it is needed
+
+const table = useTable({
+  features,
+  rowModels: {},
+  //...
+  atoms: {
+    columnPinning: columnPinningAtom,
+  },
+  //...
+})
+```
+
+Alternatively, the v8-style `state.columnPinning` plus `onColumnPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```tsx
 const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
   left: [],
   right: [],

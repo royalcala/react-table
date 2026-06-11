@@ -7,6 +7,7 @@ title: Row Pinning (Svelte) Guide
 Want to skip to the implementation? Check out these Svelte examples:
 
 - [Row Pinning](../examples/row-pinning)
+
 Use getters for reactive inputs such as `data` when passing Svelte state to `createTable`.
 
 ### Svelte Setup
@@ -84,7 +85,33 @@ const table = createTable({
 })
 ```
 
-If you need to manage row pinning outside of the table instance, use `state.rowPinning` with `onRowPinningChange`.
+If you need to manage row pinning outside of the table instance, the recommended v9 approach is an external atom passed to the table's `atoms` option. External atoms give you fine-grained subscriptions anywhere in your app, and other code can read or write the pinning state without coupling that code to the table instance.
+
+```ts
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+import type { RowPinningState } from '@tanstack/svelte-table'
+
+const rowPinningAtom = createAtom<RowPinningState>({
+  top: [],
+  bottom: [],
+})
+
+const rowPinning = useSelector(rowPinningAtom) // subscribe wherever it is needed
+
+const table = createTable({
+  features,
+  rowModels: {},
+  columns,
+  get data() {
+    return data
+  },
+  atoms: {
+    rowPinning: rowPinningAtom,
+  },
+})
+```
+
+Alternatively, the v8-style `state.rowPinning` plus `onRowPinningChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
 
 ```ts
 import { createTableState } from '@tanstack/svelte-table'

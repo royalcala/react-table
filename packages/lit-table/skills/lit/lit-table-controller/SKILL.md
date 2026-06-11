@@ -4,7 +4,7 @@ description: >
   The `TableController` ReactiveController pattern for hosting a TanStack Table
   instance inside a LitElement. One controller per host (constructed in a class
   field); `.table(options, selector?)` called from `render()`. The controller
-  installs the Lit `coreReativityFeature`, subscribes the host to `table.store`
+  installs the Lit `coreReactivityFeature`, subscribes the host to `table.store`
   and `table.optionsStore`, and tears those subscriptions down on
   `hostDisconnected`. Routing keywords: TableController, ReactiveController,
   ReactiveControllerHost, hostConnected, hostDisconnected, lit-table.
@@ -40,7 +40,7 @@ export class TableController<TFeatures, TData> implements ReactiveController {
       this._table = constructTable({
         ...tableOptions,
         features: {
-          coreReativityFeature: litReactivity(),
+          coreReactivityFeature: litReactivity(),
           ...tableOptions.features,
         },
         mergeOptions: (def, next) => ({ ...def, ...next }),

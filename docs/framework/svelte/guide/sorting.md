@@ -49,7 +49,7 @@ Since the sorting state is an array, it is possible to sort by multiple columns 
 
 #### Accessing Sorting State
 
-You can access the sorting state directly from the table instance with `table.atoms.sorting.get()` or from the current `table.store.state` snapshot.
+For reactive reads that should update your UI, use `table.state.sorting` (selected by the `createTable` selector) or `subscribeTable`. In event handlers or other non-reactive code, you can read the current snapshot with `table.atoms.sorting.get()`, but be aware that this read only participates in Svelte dependency tracking when called in a rune-tracked context.
 
 ```ts
 const table = createTable({
@@ -60,25 +60,52 @@ const table = createTable({
   //...
 })
 
-console.log(table.atoms.sorting.get()) // access the current sorting state
+table.state.sorting // reactive read
+table.atoms.sorting.get() // snapshot read in event handlers
 ```
 
-However, if you need to access the sorting state before the table is initialized, you can "control" the sorting state like down below.
+However, if you need access to the sorting state outside of the table, you can "control" the sorting state like down below.
 
 #### Controlled Sorting State
 
-If you need easy access to the sorting state, you can control/manage the sorting state in your own state management with the `state.sorting` and `onSortingChange` table options.
+If you need easy access to the sorting state in other parts of your application, you can own the sorting state slice yourself. The recommended way in v9 is an external atom passed through the `atoms` table option. Atoms preserve fine-grained subscriptions, and the sorting value can be used elsewhere (such as in a query key for server-side sorting) without coupling that code to the table instance.
 
 ```ts
-import { createTableState } from '@tanstack/svelte-table'
+import { createAtom, useSelector } from '@tanstack/svelte-store'
 
-const [sorting, setSorting] = createTableState<SortingState>([]) // can set initial sorting state here
+const sortingAtom = createAtom<SortingState>([]) // can set initial sorting state here
+
+// subscribe to the atom wherever you need the value (e.g. for a query key)
+const sorting = useSelector(sortingAtom) // read it reactively with sorting.current
 
 const table = createTable({
   features,
   rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
   columns,
-  data,
+  get data() {
+    return data
+  },
+  //...
+  atoms: {
+    sorting: sortingAtom, // table sorting APIs now update sortingAtom
+  },
+})
+```
+
+Alternatively, the v8-style `state.sorting` plus `onSortingChange` pattern is still supported. It can be convenient for simple integrations or when migrating v8 code, but it is less fine-grained than external atoms. See the [Table State Guide](./table-state) for a deeper comparison.
+
+```ts
+import { createTableState } from '@tanstack/svelte-table'
+
+const [sorting, setSorting] = createTableState<SortingState>([])
+
+const table = createTable({
+  features,
+  rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
+  columns,
+  get data() {
+    return data
+  },
   //...
   state: {
     get sorting() {
@@ -122,22 +149,30 @@ Whether or not you should use client-side or server-side sorting depends entirel
 If you plan to just use your own server-side sorting in your back-end logic, you do not need to provide a sorted row model. But if you have provided a sorting row model, but you want to disable it, you can use the `manualSorting` table option.
 
 ```ts
-const [sorting, setSorting] = createTableState<SortingState>([])
+import { createAtom, useSelector } from '@tanstack/svelte-store'
+
+const features = tableFeatures({ rowSortingFeature }) // feature needed for sorting state/APIs
+
+const sortingAtom = createAtom<SortingState>([])
+
+// subscribe to the sorting state for your server-side query
+const sorting = useSelector(sortingAtom)
 
 const table = createTable({
-  features: tableFeatures({ rowSortingFeature }), // feature needed for sorting state/APIs
+  features,
   rowModels: {}, // no sortedRowModel needed for manual sorting
   columns,
-  data,
-  manualSorting: true, // use pre-sorted row model instead of sorted row model
-  state: {
-    get sorting() {
-      return sorting()
-    },
+  get data() {
+    return data
   },
-  onSortingChange: setSorting,
+  manualSorting: true, // use pre-sorted row model instead of sorted row model
+  atoms: {
+    sorting: sortingAtom,
+  },
 })
 ```
+
+Hoisting the sorting state into your own scope (with an external atom or the `state.sorting` plus `onSortingChange` pattern) is covered in the [Controlled Sorting State](#controlled-sorting-state) section above.
 
 > **NOTE**: When `manualSorting` is set to `true`, the table will assume that the data that you provide is already sorted, and will not apply any sorting to it.
 
@@ -181,11 +216,11 @@ By default, there are 6 built-in sorting functions to choose from:
 - `datetime` - Sorts by time, use this if your values are `Date` objects.
 - `basic` - Sorts using a basic/standard `a > b ? 1 : a < b ? -1 : 0` comparison. This is the fastest sorting function, but may not be the most accurate.
 
-You can also define your own custom sorting functions either as the `sortFn` column option, or as a global sorting function using the `sortFns` table option.
+You can also define your own custom sorting functions, either inline as the `sortFn` column option, or by name in the sorting function registry that you pass to `createSortedRowModel`.
 
 #### Custom Sorting Functions
 
-When defining a custom sorting function in either the `sortFns` table option or as a `sortFn` column option, it should have the following signature:
+Whether you register a custom sorting function in the registry passed to `createSortedRowModel` or pass it directly as a `sortFn` column option, it should have the following signature:
 
 ```ts
 //optionally use the SortFn to infer the parameter types
@@ -194,7 +229,7 @@ const myCustomSortFn: SortFn<TFeatures, TData> = (rowA: Row<TFeatures, TData>, r
 }
 ```
 
-> Note: The comparison function does not need to take whether or not the column is in descending or ascending order into account. The row models will take of that logic. `sortFn` functions only need to provide a consistent comparison.
+> Note: The comparison function does not need to take whether or not the column is in descending or ascending order into account. The row models will take care of that logic. `sortFn` functions only need to provide a consistent comparison.
 
 Every sorting function receives 2 rows and a column ID and are expected to compare the two rows using the column ID to return `-1`, `0`, or `1` in ascending order. Here's a cheat sheet:
 
@@ -214,7 +249,7 @@ const columns = [
   {
     header: () => 'Age',
     accessorKey: 'age',
-    sortFn: 'myCustomSortFn', // use custom global sorting function
+    sortFn: 'myCustomSortFn', // reference a custom sorting function registered with createSortedRowModel
   },
   {
     header: () => 'Birthday',
@@ -248,6 +283,18 @@ const table = createTable({
   data,
 })
 ```
+
+> **TypeScript Note:** For `sortFn: 'myCustomSortFn'` string references to typecheck, augment the `SortFns` interface with a `declare module` block:
+>
+> ```ts
+> declare module '@tanstack/svelte-table' {
+>   interface SortFns {
+>     myCustomSortFn: SortFn<typeof features, MyData>
+>   }
+> }
+> ```
+>
+> Alternatively, skip the registry and the augmentation entirely by passing the function directly to the `sortFn` column option.
 
 ### Customize Sorting
 
@@ -329,7 +376,7 @@ const columns = [
 
 Any undefined values will be sorted to the beginning or end of the list based on the `sortUndefined` column option or table option. You can customize this behavior for your specific use-case.
 
-In not specified, the default value for `sortUndefined` is `1`, and undefined values will be sorted with lower priority (descending), if ascending, undefined will appear on the end of the list.
+If not specified, the default value for `sortUndefined` is `1`, and undefined values will be sorted with lower priority (descending), if ascending, undefined will appear on the end of the list.
 
 - `'first'` - Undefined values will be pushed to the beginning of the list
 - `'last'` - Undefined values will be pushed to the end of the list
@@ -353,13 +400,13 @@ const columns = [
 
 By default, the ability to remove sorting while cycling through the sorting states for a column is enabled. You can disable this behavior using the `enableSortingRemoval` table option. This behavior is useful if you want to ensure that at least one column is always sorted.
 
-The default behavior when using either the `getToggleSortingHandler` or `toggleSorting` APIs is to cycle through the sorting states like this:
+The default behavior when using either the `getToggleSortingHandler` or `toggleSorting` APIs is to cycle through the sorting states like this (the first direction depends on the column's data type and the `sortDescFirst` option, as discussed [above](#sorting-direction); a string column is shown here):
 
-`'none' -> 'desc' -> 'asc' -> 'none' -> 'desc' -> 'asc' -> ...`
+`'none' -> 'asc' -> 'desc' -> 'none' -> 'asc' -> 'desc' -> ...`
 
-If you disable sorting removal, the behavior will be like this:
+If you disable sorting removal, the `'none'` state is skipped after the first sort:
 
-`'none' -> 'desc' -> 'asc' -> 'desc' -> 'asc' -> ...`
+`'none' -> 'asc' -> 'desc' -> 'asc' -> 'desc' -> ...`
 
 Once a column is sorted and `enableSortingRemoval` is `false`, toggling the sorting on that column will never remove the sorting. However, if the user sorts by another column and it is not a multi-sort event, then the sorting will be removed from the previous column and just applied to the new column.
 
@@ -371,7 +418,7 @@ const table = createTable({
   rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
   columns,
   data,
-  enableSortingRemoval: false, // disable the ability to remove sorting on columns (always none -> asc -> desc -> asc)
+  enableSortingRemoval: false, // disable the ability to remove sorting on columns (sorting can never return to 'none' once applied)
 })
 ```
 

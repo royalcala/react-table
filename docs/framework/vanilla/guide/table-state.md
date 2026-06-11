@@ -32,7 +32,7 @@ A table instance has a few state surfaces:
 - `table.atoms` are readonly derived atoms exposed per registered state slice.
 - `table.store` is a readonly flat TanStack Store derived by putting all of the registered `table.atoms` together.
 
-For vanilla or non-framework use, pass `storeReactivityBindings()` through the table's `coreReativityFeature`. Table APIs that call atom `.get()` read current values synchronously. UI updates are your responsibility; subscribe to atoms or `table.store` and redraw as needed.
+For vanilla or non-framework use, pass `storeReactivityBindings()` through the table's `coreReactivityFeature`. Table APIs that call atom `.get()` read current values synchronously. UI updates are your responsibility; subscribe to atoms or `table.store` and redraw as needed.
 
 ### Feature-based State
 
@@ -46,7 +46,7 @@ const features = tableFeatures({
 
 const table = constructTable({
   features: {
-    coreReativityFeature: storeReactivityBindings(),
+    coreReactivityFeature: storeReactivityBindings(),
     ...features,
   },
   rowModels: {
@@ -148,7 +148,7 @@ If you only need to customize the starting value for some table state, use `init
 ```ts
 const table = constructTable({
   features: {
-    coreReativityFeature: storeReactivityBindings(),
+    coreReactivityFeature: storeReactivityBindings(),
     ...features,
   },
   rowModels: {
@@ -215,7 +215,7 @@ const paginationAtom = createAtom<PaginationState>({
 
 const table = constructTable({
   features: {
-    coreReativityFeature: storeReactivityBindings(),
+    coreReactivityFeature: storeReactivityBindings(),
     ...features,
   },
   rowModels: {},
@@ -246,7 +246,7 @@ let pagination: PaginationState = {
 
 const table = constructTable({
   features: {
-    coreReativityFeature: storeReactivityBindings(),
+    coreReactivityFeature: storeReactivityBindings(),
     ...features,
   },
   rowModels: {

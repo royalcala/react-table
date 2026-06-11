@@ -33,7 +33,7 @@ export function constructTable<
   TFeatures extends TableFeatures,
   TData extends RowData,
 >(tableOptions: TableOptions<TFeatures, TData>): Table<TFeatures, TData> {
-  const _reactivity = tableOptions.features.coreReativityFeature!
+  const _reactivity = tableOptions.features.coreReactivityFeature!
 
   const table = {
     _reactivity,

@@ -42,6 +42,36 @@ npm install @tanstack/lit-virtual
 ```
 
 The Lit examples use `VirtualizerController` from `@tanstack/lit-virtual`. TanStack Table still owns rows, columns, headers, cells, sizing, sorting, filtering, and other table state; TanStack Virtual decides which item indexes should render for the current scroll position.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with your `TableController`; nothing about virtualization changes the table setup.
+
+```ts
+import {
+  TableController,
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+} from '@tanstack/lit-table'
+import { VirtualizerController } from '@tanstack/lit-virtual'
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+// in your LitElement's render method:
+const table = this.tableController.table({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  data: this.data,
+})
+```
+
 ### The Basic Pattern
 
 Most virtualized table implementations follow the same pattern:
@@ -53,30 +83,52 @@ Most virtualized table implementations follow the same pattern:
 5. Render only virtual items.
 6. Use virtual offsets or spacer padding to preserve the full scroll geometry.
 
-Here is a compact row virtualization example:
+Here is a compact row virtualization example. Create the `VirtualizerController` once (it registers itself as a ReactiveController on the host, so never construct it inside `render()`), then read the actual virtualizer with `getVirtualizer()` each render:
 
 ```ts
-const rows = table.getRowModel().rows
+class MyTable extends LitElement {
+  private tableController = new TableController<typeof features, Person>(this)
 
-const rowVirtualizer = new VirtualizerController(this, {
-  count: rows.length,
-  getScrollElement: () => this.tableContainer,
-  estimateSize: () => 33,
-  overscan: 5,
-})
+  private tableContainerRef: Ref = createRef()
 
-return html`
-  <tbody style="height: ${rowVirtualizer.getTotalSize()}px; position: relative">
-    ${rowVirtualizer.getVirtualItems().map((virtualRow) => {
-      const row = rows[virtualRow.index]
-      return html`
-        <tr style="position: absolute; transform: translateY(${virtualRow.start}px); width: 100%">
-          ${row.getVisibleCells().map((cell) => html`<td>${FlexRender({ cell })}</td>`)}
-        </tr>
-      `
-    })}
-  </tbody>
-`
+  private rowVirtualizerController: VirtualizerController<Element, Element>
+
+  connectedCallback() {
+    this.rowVirtualizerController = new VirtualizerController(this, {
+      count: 0, // synced with the row count in render()
+      getScrollElement: () => this.tableContainerRef.value!,
+      estimateSize: () => 33,
+      overscan: 5,
+    })
+    super.connectedCallback()
+  }
+
+  protected render() {
+    const table = this.tableController.table({
+      // ...table options
+    })
+    const rows = table.getRowModel().rows
+
+    const rowVirtualizer = this.rowVirtualizerController.getVirtualizer()
+    rowVirtualizer.setOptions({
+      ...rowVirtualizer.options,
+      count: rows.length,
+    })
+
+    return html`
+      <tbody style="height: ${rowVirtualizer.getTotalSize()}px; position: relative">
+        ${rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const row = rows[virtualRow.index]
+          return html`
+            <tr style="position: absolute; transform: translateY(${virtualRow.start}px); width: 100%">
+              ${row.getVisibleCells().map((cell) => html`<td>${FlexRender({ cell })}</td>`)}
+            </tr>
+          `
+        })}
+      </tbody>
+    `
+  }
+}
 ```
 
 ### Virtualized Rows
@@ -108,18 +160,20 @@ const visibleColumns = table.getVisibleLeafColumns()
 The column virtualizer is configured for horizontal virtualization:
 
 ```ts
-const columnVirtualizer = VirtualizerController({
+this.columnVirtualizerController = new VirtualizerController(this, {
   count: visibleColumns.length,
-  estimateSize: index => visibleColumns[index].getSize(),
-  getScrollElement: () => tableContainerRef.current,
+  estimateSize: (index) => visibleColumns[index]?.getSize() ?? 150,
+  getScrollElement: () => this.tableContainerRef.value!,
   horizontal: true,
   overscan: 3,
 })
 ```
 
-Column virtualization uses a different rendering strategy than row virtualization. Instead of absolutely positioning columns, the examples add fake spacer cells to the left and right:
+Column virtualization uses a different rendering strategy than row virtualization. Instead of absolutely positioning columns, the examples add fake spacer cells to the left and right. As with rows, read the virtualizer from the controller first:
 
 ```ts
+const columnVirtualizer = this.columnVirtualizerController.getVirtualizer()
+
 const virtualColumns = columnVirtualizer.getVirtualItems()
 const virtualPaddingLeft = virtualColumns[0]?.start ?? 0
 const virtualPaddingRight =
@@ -179,6 +233,7 @@ Then use `measureElement` to refine the actual row height after rendering:
 ```ts
 html`
   <tr
+    data-index=${virtualRow.index}
     ${ref((node) =>
       this.rowVirtualizerController
         .getVirtualizer()
@@ -189,7 +244,7 @@ html`
 `
 ```
 
-Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In non-React adapters, call `measureElement` through the adapter-appropriate ref, action, directive, or controller.
+Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In Lit, call `measureElement` through the `ref` directive from `lit/directives/ref.js`, as shown above and in the official [virtualized rows example](../examples/virtualized-rows).
 
 Overscan helps avoid blank regions while measurements settle. If every row has a known fixed height, skip dynamic measurement and use the fixed height estimate instead.
 

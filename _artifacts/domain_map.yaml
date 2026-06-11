@@ -6827,7 +6827,7 @@ gaps:
   - skill: setup
     question:
       For vanilla JS (`@tanstack/table-core` direct), is `storeReactivityBindings()` strictly required,
-      or is there a no-reactivity path? `constructTable` reads `tableOptions.features.coreReativityFeature`
+      or is there a no-reactivity path? `constructTable` reads `tableOptions.features.coreReactivityFeature`
       unconditionally — implies required, but want to confirm.
     context:
       Affects the vanilla failure mode set. Currently I have not added a failure mode for "uses constructTable

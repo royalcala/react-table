@@ -15,7 +15,7 @@ Vue refs can be passed directly where the adapter expects reactive table options
 ### Vue Setup
 
 Install and import the Vue virtualizer adapter from `@tanstack/vue-virtual`. TanStack Table still owns rows, columns, and table state; the virtualizer owns scroll indexes and measurements.
-Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table).
+Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table) (a React example, but the virtualizer concepts translate directly).
 
 ## Virtualization (Vue) Guide
 
@@ -44,6 +44,37 @@ npm install @tanstack/vue-virtual
 ```
 
 The Vue examples use `useVirtualizer` from `@tanstack/vue-virtual`. TanStack Table still owns rows, columns, headers, cells, sizing, sorting, filtering, and other table state; TanStack Virtual decides which item indexes should render for the current scroll position.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with `useTable`; nothing about virtualization changes the table setup.
+
+```ts
+import {
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+  useTable,
+} from '@tanstack/vue-table'
+import { useVirtualizer } from '@tanstack/vue-virtual'
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+const table = useTable({
+  features,
+  rowModels: {
+    sortedRowModel: createSortedRowModel(sortFns),
+  },
+  columns,
+  get data() {
+    return data.value
+  },
+})
+```
+
 ### The Basic Pattern
 
 Most virtualized table implementations follow the same pattern:
@@ -113,7 +144,7 @@ The row virtualizer is configured with `count: rows.length`, a row height estima
 
 The examples render cells from the current row with APIs like `row.getVisibleCells()` or `row.getAllCells()`, depending on whether the example needs visibility-aware cells or all cells.
 
-The official examples use large generated datasets, commonly tens or hundreds of thousands of rows. They also support dynamic row heights by using `measureElement` when possible. The examples skip dynamic row measurement in Firefox because Firefox can measure table border height differently.
+The official examples use large generated datasets, commonly tens or hundreds of thousands of rows. They also support dynamic row heights by using `measureElement` when possible.
 
 ### Virtualized Columns
 
@@ -128,13 +159,15 @@ const visibleColumns = table.getVisibleLeafColumns()
 The column virtualizer is configured for horizontal virtualization:
 
 ```ts
-const columnVirtualizer = useVirtualizer({
-  count: visibleColumns.length,
-  estimateSize: index => visibleColumns[index].getSize(),
-  getScrollElement: () => tableContainerRef.current,
-  horizontal: true,
-  overscan: 3,
-})
+const columnVirtualizer = useVirtualizer(
+  computed(() => ({
+    count: visibleColumns.value.length,
+    estimateSize: (index: number) => visibleColumns.value[index].getSize(),
+    getScrollElement: () => tableContainerRef.value,
+    horizontal: true,
+    overscan: 3,
+  })),
+)
 ```
 
 Column virtualization uses a different rendering strategy than row virtualization. Instead of absolutely positioning columns, the examples add fake spacer cells to the left and right:
@@ -210,7 +243,7 @@ function measureElement(el: Element | ComponentPublicInstance | null) {
 >
 ```
 
-Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In non-React adapters, call `measureElement` through the adapter-appropriate ref, action, directive, or controller.
+Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In Vue, pass a function ref (`:ref="measureElement"`) as shown above; Vue calls it with the element (or a component instance) when the row mounts and updates, and the function forwards real elements to `rowVirtualizer.value.measureElement`. This is exactly what the official [Virtualized Rows example](../examples/virtualized-rows) does.
 
 Overscan helps avoid blank regions while measurements settle. If every row has a known fixed height, skip dynamic measurement and use the fixed height estimate instead.
 

@@ -13,7 +13,7 @@ Want to skip to the implementation? Check out these Angular examples:
 ### Angular Setup
 
 Install and import the Angular virtualizer adapter from `@tanstack/angular-virtual`. TanStack Table still owns rows, columns, and table state; the virtualizer owns scroll indexes and measurements.
-Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/react/examples/table).
+Also see the [TanStack Virtual table example](https://tanstack.com/virtual/latest/docs/framework/angular/examples/table).
 
 ## Virtualization (Angular) Guide
 
@@ -42,6 +42,37 @@ npm install @tanstack/angular-virtual
 ```
 
 The Angular examples use `injectVirtualizer` from `@tanstack/angular-virtual`. TanStack Table still owns rows, columns, headers, cells, sizing, sorting, filtering, and other table state; TanStack Virtual decides which item indexes should render for the current scroll position.
+
+The table itself is set up like any other v9 table. Declare your features with `tableFeatures()` and create the table with `injectTable`; nothing about virtualization changes the table setup.
+
+```ts
+import {
+  columnSizingFeature,
+  rowSortingFeature,
+  createSortedRowModel,
+  sortFns,
+  tableFeatures,
+  injectTable,
+} from '@tanstack/angular-table'
+import { injectVirtualizer } from '@tanstack/angular-virtual'
+
+const features = tableFeatures({
+  columnSizingFeature,
+  rowSortingFeature,
+})
+
+export class App {
+  readonly table = injectTable(() => ({
+    features,
+    rowModels: {
+      sortedRowModel: createSortedRowModel(sortFns),
+    },
+    columns,
+    data: this.data(),
+  }))
+}
+```
+
 ### The Basic Pattern
 
 Most virtualized table implementations follow the same pattern:
@@ -184,7 +215,22 @@ Use `estimateSize` as the virtualizer's initial guess:
 estimateSize: () => 33
 ```
 
-Then use `measureElement` to refine the actual row height after rendering:
+Then use `measureElement` to refine the actual row height after rendering. In Angular, pass a `measureElement` function to `injectVirtualizer` and set `data-index` on each rendered row so the virtualizer can associate measurements with the correct item. This is exactly what the [Virtualized Rows example](../examples/virtualized-rows) does:
+
+```ts
+readonly rowVirtualizer = injectVirtualizer(() => ({
+  count: this.rows().length,
+  scrollElement: this.scrollContainer()?.nativeElement,
+  estimateSize: () => 33,
+  // measure dynamic row height, except in firefox because it measures table border height incorrectly
+  measureElement:
+    typeof window !== 'undefined' &&
+    navigator.userAgent.indexOf('Firefox') === -1
+      ? (element) => element.getBoundingClientRect().height
+      : undefined,
+  overscan: 5,
+}))
+```
 
 ```html
 <tr
@@ -192,8 +238,6 @@ Then use `measureElement` to refine the actual row height after rendering:
   [style.transform]="'translateY(' + virtualRow.start + 'px)'"
 >
 ```
-
-Set `data-index` on each row so the virtualizer can associate measurements with the correct item. In non-React adapters, call `measureElement` through the adapter-appropriate ref, action, directive, or controller.
 
 Overscan helps avoid blank regions while measurements settle. If every row has a known fixed height, skip dynamic measurement and use the fixed height estimate instead.
 
