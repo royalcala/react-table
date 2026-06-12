@@ -25,6 +25,9 @@ interface MyColumnMeta {
 const features = tableFeatures({
   columnFilteringFeature,
   rowPaginationFeature,
+  filteredRowModel: createFilteredRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  filterFns,
   columnMeta: metaHelper<MyColumnMeta>(),
 })
 
@@ -72,6 +75,13 @@ function App() {
           meta: {
             filterVariant: 'range',
           },
+          // custom filter function
+          filterFn: (row, _columnId, filterValue) => {
+            return (
+              row.original.progress >= filterValue[0] &&
+              row.original.progress <= filterValue[1]
+            )
+          },
         }),
       ]),
     [],
@@ -84,10 +94,6 @@ function App() {
   const table = useTable(
     {
       features,
-      rowModels: {
-        filteredRowModel: createFilteredRowModel(filterFns), // client side filtering
-        paginatedRowModel: createPaginatedRowModel(),
-      },
       columns,
       data,
       debugTable: true,

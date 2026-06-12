@@ -24,6 +24,7 @@ import {
   createTheme,
 } from '@mui/material'
 import {
+  columnFilteringFeature,
   createColumnHelper,
   createFilteredRowModel,
   createPaginatedRowModel,
@@ -43,7 +44,13 @@ import './index.css'
 const features = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
+  columnFilteringFeature,
   globalFilteringFeature,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  filteredRowModel: createFilteredRowModel(),
+  sortFns,
+  filterFns,
 })
 
 const columnHelper = createColumnHelper<typeof features, Person>()
@@ -94,11 +101,6 @@ function App() {
     {
       debugTable: true,
       features,
-      rowModels: {
-        sortedRowModel: createSortedRowModel(sortFns),
-        paginatedRowModel: createPaginatedRowModel(),
-        filteredRowModel: createFilteredRowModel(filterFns),
-      },
       columns,
       data,
       globalFilterFn: 'includesString',

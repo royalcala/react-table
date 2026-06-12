@@ -2,17 +2,21 @@
 title: Migrating to TanStack Table v9 (Lit)
 ---
 
+> [!NOTE]
+> `v9.0.0-beta.10` introduces a breaking change in how row models are defined in order to bring increased type-safety features. Row model factories and function registries now live as slots on the `features` object instead of a separate `rowModels` option, and the factories no longer take arguments. If you migrated on an earlier beta, see the [Row Model and Function Registry Migration](#row-model-and-function-registry-migration) section below for the new shape.
+
 ## What's New in TanStack Table v9
 
 TanStack Table v9 is a major release with explicit feature registration, row model registration, and a new atom-backed state model. The Lit adapter wraps those APIs in a `ReactiveController`.
 
 > The Lit adapter may change during the v9 beta cycle. This guide documents the current local v9 API and avoids speculating about future beta changes.
 
-### 1. Tree-shaking
+### 1. Tree Shaking and Extensibility
 
 - **Features are tree-shakeable**: register only the table features you use.
-- **Row models are explicit**: move root `get*RowModel` options into the `rowModels` object.
-- **Function registries moved to factories**: row model factories receive `sortFns`, `filterFns`, and `aggregationFns` directly.
+- **Row models are slots on features**: row model factories and function registries are slots on the `tableFeatures({...})` call instead of a separate `rowModels` option.
+- **Function registries are feature slots**: `sortFns`, `filterFns`, and `aggregationFns` are registered on `tableFeatures` alongside the row model factories.
+- **Custom feature plugins with full type safety**: The same plugin architecture that powers the built-in features is open to your own code. Write a custom feature with its own state, options, and APIs, register it in `tableFeatures()` alongside the built-ins, and the table's types pick it all up automatically. See the [Custom Features Guide](./custom-features.md).
 
 ### 2. State Management
 
@@ -25,6 +29,12 @@ TanStack Table v9 is a major release with explicit feature registration, row mod
 
 - **`tableOptions()`**: compose reusable option fragments.
 - **`createTableHook()`**: define shared Lit table factories with pre-bound features, row models, defaults, and render helpers.
+
+### 4. Improved Type Safety (No More Declaration Merging)
+
+- **Function registries replace `declare module` augmentation**: Custom filter, sort, and aggregation functions are registered by name in the `filterFns` / `sortFns` / `aggregationFns` slots on `tableFeatures()`. The registered keys become the valid, type-safe string values for `filterFn`, `sortFn`, `globalFilterFn`, and `aggregationFn` in your column definitions, with full inference. No more augmenting the `FilterFns` / `SortFns` / `AggregationFns` interfaces globally.
+- **Per-table meta slots**: The type-only `tableMeta`, `columnMeta`, and `filterMeta` slots declare meta types for a single table instead of merging into a global interface. The `filterMeta` slot types both the `addMeta` callback in filter functions and the values read back from `row.columnFiltersMeta`.
+- **Feature-gated APIs and validated prerequisites**: APIs like `table.setSorting` only exist on the table type when their feature is registered, and `tableFeatures()` validates slot prerequisites at the type level. Registering `sortFns` without `rowSortingFeature`, or `globalFilteringFeature` without `columnFilteringFeature`, is a typed error instead of a silent runtime no-op.
 
 ### The Good News: Most Table Logic Is Still Familiar
 
@@ -58,7 +68,6 @@ private tableController = new TableController<typeof features, Person>(this)
 protected render() {
   const table = this.tableController.table({
     features,
-    rowModels,
     columns,
     data: this.data,
   })
@@ -69,7 +78,7 @@ protected render() {
 
 The v9 controller takes the host only. Pass options to `.table(...)` during render.
 
-### New Required Options: `features` and `rowModels`
+### New Required Option: `features`
 
 ```ts
 // v8
@@ -97,7 +106,6 @@ private tableController = new TableController<typeof features, Person>(this)
 protected render() {
   const table = this.tableController.table({
     features,
-    rowModels: {}, // core row model is automatic
     columns,
     data: this.data,
   })
@@ -142,7 +150,6 @@ import { stockFeatures } from '@tanstack/lit-table'
 
 const table = this.tableController.table({
   features: stockFeatures,
-  rowModels,
   columns,
   data: this.data,
 })
@@ -171,20 +178,20 @@ Use it as a temporary migration shortcut. Explicit feature registration is the p
 
 ---
 
-## The `rowModels` Option
+## Row Model and Function Registry Migration
 
-Row models now live under `rowModels`.
+Row model factories and function registries are now slots on `tableFeatures({...})`. The separate `rowModels` option is removed.
 
 ### Migration Mapping
 
-| v8 Option | v9 `rowModels` Key | v9 Factory Function |
+| v8 Option | v9 `tableFeatures` Slot | v9 Factory / Value |
 |---|---|---|
 | `getCoreRowModel()` | (automatic) | Not needed |
-| `getFilteredRowModel()` | `filteredRowModel` | `createFilteredRowModel(filterFns)` |
-| `getSortedRowModel()` | `sortedRowModel` | `createSortedRowModel(sortFns)` |
+| `getFilteredRowModel()` + `filterFns` | `filteredRowModel` + `filterFns` | `createFilteredRowModel()` + `filterFns` |
+| `getSortedRowModel()` + `sortingFns` | `sortedRowModel` + `sortFns` | `createSortedRowModel()` + `sortFns` |
 | `getPaginationRowModel()` | `paginatedRowModel` | `createPaginatedRowModel()` |
 | `getExpandedRowModel()` | `expandedRowModel` | `createExpandedRowModel()` |
-| `getGroupedRowModel()` | `groupedRowModel` | `createGroupedRowModel(aggregationFns)` |
+| `getGroupedRowModel()` + `aggregationFns` | `groupedRowModel` + `aggregationFns` | `createGroupedRowModel()` + `aggregationFns` |
 | `getFacetedRowModel()` | `facetedRowModel` | `createFacetedRowModel()` |
 | `getFacetedMinMaxValues()` | `facetedMinMaxValues` | `createFacetedMinMaxValues()` |
 | `getFacetedUniqueValues()` | `facetedUniqueValues` | `createFacetedUniqueValues()` |
@@ -234,20 +241,18 @@ const features = tableFeatures({
   columnFilteringFeature,
   rowPaginationFeature,
   rowSortingFeature,
-})
-
-const rowModels = {
-  filteredRowModel: createFilteredRowModel(filterFns),
-  sortedRowModel: createSortedRowModel(sortFns),
+  filteredRowModel: createFilteredRowModel(),
+  sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
-}
+  filterFns,
+  sortFns,
+})
 
 private tableController = new TableController<typeof features, Person>(this)
 
 protected render() {
   const table = this.tableController.table({
     features,
-    rowModels,
     columns,
     data: this.data,
   })
@@ -288,7 +293,6 @@ By default, `table.state` contains the full registered table state.
 ```ts
 const table = this.tableController.table({
   features,
-  rowModels,
   columns,
   data: this.data,
 })
@@ -302,7 +306,6 @@ Pass a second-argument selector when you want `table.state` to contain only the 
 const table = this.tableController.table(
   {
     features,
-    rowModels,
     columns,
     data: this.data,
   },
@@ -351,7 +354,6 @@ private pagination: PaginationState = {
 protected render() {
   const table = this.tableController.table({
     features,
-    rowModels,
     columns,
     data: this.data,
     state: {
@@ -391,7 +393,6 @@ const paginationAtom = createAtom<PaginationState>({
 protected render() {
   const table = this.tableController.table({
     features,
-    rowModels,
     columns,
     data: this.data,
     atoms: {
@@ -467,7 +468,6 @@ import { tableOptions } from '@tanstack/lit-table'
 
 const baseOptions = tableOptions({
   features,
-  rowModels,
   defaultColumn: {
     minSize: 40,
   },
@@ -484,15 +484,12 @@ const table = this.tableController.table({
 
 ## `createTableHook`: Composable Table Patterns
 
-`createTableHook` creates shared Lit table helpers with features, row models, and render helpers already bound.
+`createTableHook` creates shared Lit table helpers with features (including row model slots) and render helpers already bound.
 
 ```ts
 import { createTableHook } from '@tanstack/lit-table'
 
-export const { useAppTable, createAppColumnHelper } = createTableHook({
-  features,
-  rowModels,
-})
+export const { useAppTable, createAppColumnHelper } = createTableHook({ features })
 
 const columnHelper = createAppColumnHelper<Person>()
 
@@ -613,6 +610,39 @@ const features = tableFeatures({
 
 See the new [Table and Column Meta Guide](../../../guide/table-and-column-meta) for full details on both approaches.
 
+### `FilterFns`/`SortFns`/`AggregationFns`/`FilterMeta` Augmentation Replaced by Registry Slots
+
+In v8, making a custom function usable as a string reference (like `filterFn: 'fuzzy'`) required `declare module` augmentation of the `FilterFns` interface, and typing filter meta required augmenting `FilterMeta`. In v9, registering the function in the matching registry slot does both jobs with no global augmentation:
+
+```ts
+// v8
+declare module '@tanstack/lit-table' {
+  interface FilterFns {
+    fuzzy: FilterFn<unknown>
+  }
+  interface FilterMeta {
+    itemRank: RankingInfo
+  }
+}
+
+// v9 - register in the slot; the key becomes a valid string value
+interface FuzzyFilterMeta {
+  itemRank?: RankingInfo
+}
+
+const features = tableFeatures({
+  columnFilteringFeature,
+  filteredRowModel: createFilteredRowModel(),
+  filterFns: { ...filterFns, fuzzy: fuzzyFilter },
+  filterMeta: metaHelper<FuzzyFilterMeta>(),
+})
+
+// 'fuzzy' now typechecks in column defs for tables using these features
+columnHelper.accessor('name', { filterFn: 'fuzzy' })
+```
+
+The same pattern applies to `sortFns` (for `sortFn` string values) and `aggregationFns` (for `aggregationFn` string values). See the [Fuzzy Filtering Guide](./fuzzy-filtering.md) for a complete example.
+
 ### `RowData` Type Restriction
 
 Prefer explicit object row types:
@@ -632,9 +662,10 @@ type Person = {
 - [ ] Replace controller construction with `new TableController<typeof features, TData>(this)`.
 - [ ] Move table options from the controller constructor into `tableController.table(...)`.
 - [ ] Define `features` using `tableFeatures()` (or use `stockFeatures`).
-- [ ] Move root `get*RowModel` options into `rowModels`.
+- [ ] Move row model factories and function registries into `tableFeatures({...})` slots (remove the separate `rowModels` option).
 - [ ] Remove `getCoreRowModel`; the core row model is automatic.
-- [ ] Pass `sortFns`, `filterFns`, and `aggregationFns` to row model factories.
+- [ ] Register `sortFns`, `filterFns`, and `aggregationFns` as slots on `tableFeatures({...})` (not as factory arguments).
+- [ ] Replace `declare module` augmentation of `FilterFns`/`SortFns`/`AggregationFns` with registry-slot registration, and `FilterMeta` augmentation with the `filterMeta` slot.
 - [ ] Rename `sortingFn` to `sortFn`.
 - [ ] Add `typeof features` to column helpers and types.
 - [ ] Replace `table.getState()` reads with `table.state`, `table.store.state`, or `table.atoms.<slice>.get()`.
